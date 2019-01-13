@@ -16,11 +16,11 @@ export default class LocationPicker extends React.Component {
 
   handleText(e) {
     this.setState({
-      input: e.taget.value
+      input: e.target.value
     })
   }
 
-  async handleClick(e) {
+  async handleClick() {
     this.setState({
       state: "loading"
     });
@@ -37,7 +37,7 @@ export default class LocationPicker extends React.Component {
         state: null
       });
       if (data.length > 0) {
-        this.props.onSelect(location);
+        this.props.onSelect(data[0]);
       }
     }
   };

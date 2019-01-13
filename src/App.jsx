@@ -1,5 +1,15 @@
 import React from "react";
 import LocationPicker from "./LocationPicker";
+import uniq from "lodash-es/uniqBy";
+import {
+  loggedIn,
+  findArtist,
+  getMe,
+  createPlaylist,
+  getTopTracks,
+  addTracksToPlaylist
+} from "./api";
+import { Provider, Request } from "oauth2-client-js";
 
 function getQueryBandsIn(locationURI) {
   return `SELECT ?Band, ?Name WHERE {
@@ -54,8 +64,69 @@ export default class App extends React.Component {
   constructor() {
     super();
     this.state = {
+      token: null,
+      me: null,
       bands: []
     };
+  }
+
+  async processBand(playlist, band) {
+    try {
+      const artist = await findArtist(band.name, { token: this.state.token });
+      if (artist === null) {
+        return;
+      }
+      const tracks = await getTopTracks(artist, { token: this.state.token });
+      await addTracksToPlaylist(playlist, tracks, { token: this.state.token });
+    } finally {
+      this.setState(state => ({
+        bands: state.bands.map(b =>
+          b.uri === band.uri ? { ...band, processed: true } : b
+        )
+      }));
+    }
+  }
+
+  async startProcessing() {
+    const playlist = await createPlaylist(this.state.me, "Finland" /*TODO*/, {
+      token: this.state.token
+    });
+    for (const band of this.state.bands) {
+      await this.processBand(playlist, band);
+    }
+  }
+
+  async componentDidMount() {
+    const spotify = new Provider({
+      id: "spotify",
+      authorization_url: "https://accounts.spotify.com/authorize"
+    });
+
+    try {
+      spotify.parse(window.location.hash);
+      this.setState(
+        {
+          token: spotify.getAccessToken(),
+          me: await getMe({ token: spotify.getAccessToken() })
+        },
+        () => {
+          window.location.hash = "";
+        }
+      );
+    } catch (e) {
+      // Do login flow
+      if (!(await loggedIn())) {
+        var request = new Request({
+          client_id: "96116ce1fa57471ba2edf02d66c6f6c4",
+          redirect_uri: "http://localhost:1234",
+          scope: ["playlist-modify-public", "user-read-private"]
+        });
+
+        var uri = spotify.requestToken(request);
+        spotify.remember(request);
+        window.location.href = uri;
+      }
+    }
   }
 
   async handleLocation(location) {
@@ -66,12 +137,21 @@ export default class App extends React.Component {
     const resp = await fetch(uri);
     if (resp.ok) {
       const data = await resp.json();
-      this.setState({
-        bands: data.results.bindings.map(b => ({
-          name: b.Name.value,
-          uri: b.Band.value
-        }))
-      });
+      this.setState(
+        {
+          bands: uniq(
+            data.results.bindings.map(b => ({
+              name: b.Name.value,
+              uri: b.Band.value,
+              processed: false
+            })),
+            band => band.uri
+          )
+        },
+        () => {
+          this.startProcessing();
+        }
+      );
     }
   }
 
@@ -81,7 +161,12 @@ export default class App extends React.Component {
         <LocationPicker onSelect={this.handleLocation.bind(this)} />
         <ul>
           {this.state.bands.map(band => (
-            <li key={band.uri}>{band.name}</li>
+            <li
+              style={{ color: band.processed ? "black" : "gray" }}
+              key={band.uri}
+            >
+              {band.name}
+            </li>
           ))}
         </ul>
       </div>
