@@ -119,7 +119,7 @@ export default class App extends React.Component {
         var request = new Request({
           client_id: "96116ce1fa57471ba2edf02d66c6f6c4",
           redirect_uri: "http://localhost:1234",
-          scope: ["playlist-modify-public", "user-read-private"]
+          scope: ["playlist-modify-public"]
         });
 
         var uri = spotify.requestToken(request);
@@ -162,7 +162,7 @@ export default class App extends React.Component {
         <ul>
           {this.state.bands.map(band => (
             <li
-              style={{ color: band.processed ? "black" : "gray" }}
+              style={{ color: band.processed ? "black" : "lightgray" }}
               key={band.uri}
             >
               {band.name}
