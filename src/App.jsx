@@ -66,7 +66,8 @@ export default class App extends React.Component {
     this.state = {
       token: null,
       me: null,
-      bands: []
+      bands: [],
+      location: null
     };
   }
 
@@ -88,7 +89,7 @@ export default class App extends React.Component {
   }
 
   async startProcessing() {
-    const playlist = await createPlaylist(this.state.me, "Finland" /*TODO*/, {
+    const playlist = await createPlaylist(this.state.me, this.state.location.name, {
       token: this.state.token
     });
     for (const band of this.state.bands) {
