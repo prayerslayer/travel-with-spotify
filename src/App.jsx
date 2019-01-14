@@ -90,9 +90,13 @@ export default class App extends React.Component {
   }
 
   async startProcessing() {
-    const playlist = await createPlaylist(this.state.me, this.state.location.name, {
-      token: this.state.token
-    });
+    const playlist = await createPlaylist(
+      this.state.me,
+      this.state.location.name,
+      {
+        token: this.state.token
+      }
+    );
     for (const band of this.state.bands) {
       await this.processBand(playlist, band);
     }
@@ -117,7 +121,7 @@ export default class App extends React.Component {
       );
     } catch (e) {
       // Do login flow
-      if (!(await loggedIn({token: this.state.token}))) {
+      if (!(await loggedIn({ token: this.state.token }))) {
         var request = new Request({
           client_id: "96116ce1fa57471ba2edf02d66c6f6c4",
           redirect_uri: "http://localhost:1234",
@@ -139,39 +143,49 @@ export default class App extends React.Component {
     const resp = await fetch(uri);
     if (resp.ok) {
       const data = await resp.json();
-      this.setState(
-        {
-          location,
-          bands: uniq(
-            data.results.bindings.map(b => ({
-              name: b.Name.value,
-              uri: b.Band.value,
-              processed: false
-            })),
-            band => band.uri
-          )
-        },
-        () => {
-          this.startProcessing();
-        }
-      );
+      this.setState({
+        location,
+        bands: uniq(
+          data.results.bindings.map(b => ({
+            name: b.Name.value,
+            uri: b.Band.value,
+            processed: false
+          })),
+          band => band.uri
+        )
+      });
     }
   }
 
   render() {
+    const { bands, location } = this.state;
     return (
       <div>
         <LocationPicker onSelect={this.handleLocation.bind(this)} />
-        <ul>
-          {this.state.bands.map(band => (
-            <li
-              style={{ color: band.processed ? "black" : "lightgray" }}
-              key={band.uri}
-            >
-              {band.name}
-            </li>
-          ))}
-        </ul>
+        {location !== null && (
+          <div>
+            <h1>{location.name}</h1>
+            <p>{location.abstract}</p>
+            <button onClick={() => this.startProcessing()}>
+              Create playlist "{location.name}"
+            </button>
+          </div>
+        )}
+        {bands.length > 0 && (
+          <React.Fragment>
+            <h2>Artists ({bands.length})</h2>
+            <ul>
+              {bands.map(band => (
+                <li
+                  style={{ color: band.processed ? "black" : "lightgray" }}
+                  key={band.uri}
+                >
+                  {band.name}
+                </li>
+              ))}
+            </ul>
+          </React.Fragment>
+        )}
       </div>
     );
   }

@@ -1,7 +1,14 @@
 import React from "react";
 
 function getQueryLocationOf(wikipage) {
-  return `select distinct ?Location, ?Name where { ?Location foaf:isPrimaryTopicOf <${wikipage}> . ?Location foaf:name ?Name  } LIMIT 1`;
+  return `SELECT DISTINCT ?Location, ?Name, ?Abstract WHERE {
+    ?Location foaf:isPrimaryTopicOf <${wikipage}> .
+    ?Location foaf:name ?Name .
+    ?Location dbo:abstract ?Abstract .
+    FILTER langMatches( lang(?Abstract), "EN" ) .
+    FILTER langMatches ( lang(?Name), "EN" )
+  }
+  LIMIT 1`;
 }
 
 export default class LocationPicker extends React.Component {
@@ -27,7 +34,8 @@ export default class LocationPicker extends React.Component {
     if (resp.ok) {
       const data = (await resp.json()).results.bindings.map(b => ({
         uri: b.Location.value,
-        name: b.Name.value
+        name: b.Name.value,
+        abstract: b.Abstract.value
       }));
       if (data.length > 0) {
         this.props.onSelect(data[0]);
