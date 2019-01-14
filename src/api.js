@@ -1,8 +1,8 @@
 import sortBy from "lodash-es/sortBy";
 
-export async function loggedIn() {
-  const resp = await fetch("https://api.spotify.com/v1/me");
-  return resp.ok;
+export async function loggedIn(opts) {
+  const me = await getMe(opts);
+  return !me.error;
 }
 
 export async function getMe({ token }) {
@@ -38,7 +38,9 @@ export async function findArtist(name, { token }) {
 
 export async function getTopTracks(artist, { token }) {
   const resp = await fetch(
-    `https://api.spotify.com/v1/artists/${artist.id}/top-tracks?market=from_token`,
+    `https://api.spotify.com/v1/artists/${
+      artist.id
+    }/top-tracks?market=from_token`,
     {
       headers: {
         Authorization: `Bearer ${token}`

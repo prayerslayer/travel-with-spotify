@@ -80,6 +80,7 @@ export default class App extends React.Component {
       const tracks = await getTopTracks(artist, { token: this.state.token });
       await addTracksToPlaylist(playlist, tracks, { token: this.state.token });
     } finally {
+      // TODO seems wildly inefficient
       this.setState(state => ({
         bands: state.bands.map(b =>
           b.uri === band.uri ? { ...band, processed: true } : b
@@ -116,7 +117,7 @@ export default class App extends React.Component {
       );
     } catch (e) {
       // Do login flow
-      if (!(await loggedIn())) {
+      if (!(await loggedIn({token: this.state.token}))) {
         var request = new Request({
           client_id: "96116ce1fa57471ba2edf02d66c6f6c4",
           redirect_uri: "http://localhost:1234",
@@ -131,7 +132,7 @@ export default class App extends React.Component {
   }
 
   async handleLocation(location) {
-    const bandQuery = getQueryBandsIn(location);
+    const bandQuery = getQueryBandsIn(location.uri);
     const uri = `https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=${encodeURIComponent(
       bandQuery
     )}&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query`;
@@ -140,6 +141,7 @@ export default class App extends React.Component {
       const data = await resp.json();
       this.setState(
         {
+          location,
           bands: uniq(
             data.results.bindings.map(b => ({
               name: b.Name.value,
