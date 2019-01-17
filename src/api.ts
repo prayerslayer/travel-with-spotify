@@ -1,11 +1,16 @@
 import sortBy from "lodash-es/sortBy";
+import { User, Artist, Playlist, Track } from "./spotify";
 
-export async function loggedIn(opts) {
-  const me = await getMe(opts);
-  return !me.error;
+type APIOptions = {
+  token: string;
 }
 
-export async function getMe({ token }) {
+export async function loggedIn(opts: APIOptions): Promise<boolean> {
+  const me = await getMe(opts);
+  return !(me as any).error;
+}
+
+export async function getMe({ token }: APIOptions): Promise<User> {
   const resp = await fetch("https://api.spotify.com/v1/me", {
     headers: {
       Authorization: `Bearer ${token}`
@@ -14,7 +19,7 @@ export async function getMe({ token }) {
   return await resp.json();
 }
 
-export async function findArtist(name, { token }) {
+export async function findArtist(name: string, { token }: APIOptions): Promise<Artist | null> {
   const resp = await fetch(
     `https://api.spotify.com/v1/search?type=artist&q=${encodeURIComponent(
       name
@@ -36,10 +41,10 @@ export async function findArtist(name, { token }) {
   return null;
 }
 
-export async function getTopTracks(artist, { token }) {
+export async function getTopTracks(artist: Artist, { token }: APIOptions): Promise<Track[]> {
   const resp = await fetch(
     `https://api.spotify.com/v1/artists/${
-      artist.id
+    artist.id
     }/top-tracks?market=from_token`,
     {
       headers: {
@@ -50,7 +55,7 @@ export async function getTopTracks(artist, { token }) {
   return (await resp.json()).tracks;
 }
 
-export async function addTracksToPlaylist(playlist, tracks, { token }) {
+export async function addTracksToPlaylist(playlist: Playlist, tracks: Track[], { token }: APIOptions): Promise<void> {
   await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
     method: "POST",
     headers: {
@@ -63,7 +68,7 @@ export async function addTracksToPlaylist(playlist, tracks, { token }) {
   });
 }
 
-export async function createPlaylist(user, name, { token }) {
+export async function createPlaylist(user: User, name: string, { token }: APIOptions): Promise<Playlist> {
   // First check if one exists
   let resp = await fetch(
     `https://api.spotify.com/v1/users/${user.id}/playlists`,

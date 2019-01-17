@@ -1,6 +1,7 @@
-import React from "react";
+import * as React from "react";
+import { Location } from "./location";
 
-function getQueryLocationOf(wikipage) {
+function getQueryLocationOf(wikipage: string) {
   return `SELECT DISTINCT ?Location, ?Name, ?Abstract WHERE {
     ?Location foaf:isPrimaryTopicOf <${wikipage}> .
     ?Location foaf:name ?Name .
@@ -11,13 +12,18 @@ function getQueryLocationOf(wikipage) {
   LIMIT 1`;
 }
 
-export default class LocationPicker extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      input: "https://en.wikipedia.org/wiki/Austria",
-    };
-  }
+type Props = {
+  onSelect: (l: Location) => void;
+}
+
+type State = {
+  input: string;
+}
+
+export default class LocationPicker extends React.Component<Props, State> {
+  state = {
+    input: "https://en.wikipedia.org/wiki/Austria",
+  };
 
   handleText(e) {
     this.setState({

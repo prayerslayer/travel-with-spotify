@@ -18,7 +18,11 @@
     "styled-components": "^4.1.3"
   },
   "devDependencies": {
+    "@types/lodash-es": "^4.17.1",
+    "@types/react": "^16.7.20",
+    "@types/react-dom": "^16.0.11",
     "lodash-es": "^4.17.11",
-    "parcel-bundler": "^1.11.0"
+    "parcel-bundler": "^1.11.0",
+    "typescript": "^3.2.2"
   }
 }

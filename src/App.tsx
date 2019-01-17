@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import LocationPicker from "./LocationPicker";
 import uniq from "lodash-es/uniqBy";
 import {
@@ -10,13 +10,15 @@ import {
   addTracksToPlaylist
 } from "./api";
 import { Provider, Request } from "oauth2-client-js";
+import { Location , Band } from "./graphql";
+import { Playlist } from "./spotify";
 
-function getQueryBandsIn(locationURI) {
+function getQueryBandsIn(locationURI: string) {
   return `SELECT ?Band, ?Name WHERE {
   # hometown
   # 0 hop
   {
-    ?Band foaf:name ?Name .  
+    ?Band foaf:name ?Name .
     ?Band a schema:MusicGroup .
     ?Band dbo:hometown <${locationURI}>
   }
@@ -60,18 +62,22 @@ function getQueryBandsIn(locationURI) {
 }`;
 }
 
-export default class App extends React.Component {
-  constructor() {
-    super();
-    this.state = {
-      token: null,
-      me: null,
-      bands: [],
-      location: null
-    };
+type State = {
+  token: string | null;
+  me: null | any;
+  bands: Band[];
+  location: null | Location;
+}
+
+export default class App extends React.Component<{}, State> {
+  state = {
+    token: null,
+    me: null,
+    bands: [],
+    location: null
   }
 
-  async processBand(playlist, band) {
+  async processBand(playlist: Playlist, band: Band) {
     try {
       const artist = await findArtist(band.name, { token: this.state.token });
       if (artist === null) {
