@@ -1,5 +1,19 @@
 import * as React from "react";
-import { Location } from "./location";
+import { Location } from "./graphql";
+import styled from 'styled-components';
+
+const Button = styled.button`
+  background: transparent;
+  border-radius: 3px;
+  border: 2px solid palevioletred;
+  color: palevioletred;
+  margin: 0 1em;
+  padding: 0.25em 1em;
+`;
+
+const Input = styled.input`
+  padding: 0.25em 1em;
+`;
 
 function getQueryLocationOf(wikipage: string) {
   return `SELECT DISTINCT ?Location, ?Name, ?Abstract WHERE {
@@ -52,13 +66,14 @@ export default class LocationPicker extends React.Component<Props, State> {
   render() {
     return (
       <div className="Location">
-        <input
+        <Input
           type="text"
           value={this.state.input}
           placeholder="Paste wikipedia page"
           onChange={this.handleText.bind(this)}
         />
-        <button onClick={this.handleClick.bind(this)}>Start</button>
+
+        <Button onClick={this.handleClick.bind(this)}>Start</Button>
       </div>
     );
   }
