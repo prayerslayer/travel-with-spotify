@@ -55,6 +55,7 @@ export type Artist = {
   id: string;
   genres: string[];
   images: Image[];
+  popularity: number;
   followers: { total: number };
 }
 
@@ -81,6 +82,7 @@ export type Track = {
   type: "track";
   id: string;
   name: string;
+  duration_ms: number;
 }
 
 export type PagedResult<Content> = {

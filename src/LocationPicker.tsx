@@ -60,6 +60,7 @@ export default class LocationPicker extends React.Component<Props, State> {
       if (data.length > 0) {
         this.props.onSelect(data[0]);
       }
+      // TODO alert/select if more than one
     }
   }
 

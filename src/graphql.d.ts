@@ -4,8 +4,3 @@ export type Location = {
   name: string;
   abstract: string;
 }
-
-export type Band = {
-  uri: string;
-  name: string;
-}

@@ -10,8 +10,20 @@ import {
   addTracksToPlaylist
 } from "./api";
 import { Provider, Request } from "oauth2-client-js";
-import { Location , Band } from "./graphql";
-import { Playlist } from "./spotify";
+import { Location } from "./graphql";
+import { Playlist, Artist, Track, Image } from "./spotify";
+import styled from 'styled-components'
+
+const Grid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 180px);
+  grid-gap: 10px 10px;
+  justify-items: center;
+  justify-content: center;
+  align-items: start;
+  align-content: center;
+`;
+
 
 function getQueryBandsIn(locationURI: string) {
   return `SELECT ?Band, ?Name WHERE {
@@ -62,10 +74,20 @@ function getQueryBandsIn(locationURI: string) {
 }`;
 }
 
+type ArtistWithTracks = {
+  data: Artist;
+  tracks: Track[];
+}
+
+type SpotifyData = {
+  [artistId: string]: ArtistWithTracks;
+}
+
 type State = {
   token: string | null;
   me: null | any;
-  bands: Band[];
+  artists: SpotifyData;
+  estimatedPlaylistLengthSeconds: number;
   location: null | Location;
 }
 
@@ -73,38 +95,36 @@ export default class App extends React.Component<{}, State> {
   state = {
     token: null,
     me: null,
-    bands: [],
+    artists: {},
+    estimatedPlaylistLengthSeconds: 0,
     location: null
   }
 
-  async processBand(playlist: Playlist, band: Band) {
-    try {
-      const artist = await findArtist(band.name, { token: this.state.token });
-      if (artist === null) {
-        return;
-      }
-      const tracks = await getTopTracks(artist, { token: this.state.token });
-      await addTracksToPlaylist(playlist, tracks, { token: this.state.token });
-    } finally {
-      // TODO seems wildly inefficient
-      this.setState(state => ({
-        bands: state.bands.map(b =>
-          b.uri === band.uri ? { ...band, processed: true } : b
-        )
-      }));
+  async loadArtistFromSpotify(band: Artist) {
+    const artist = await findArtist(band.name, { token: this.state.token });
+    if (artist === null) {
+      return;
     }
+    const tracks = await getTopTracks(artist, { token: this.state.token });
+    this.setState(state => ({
+      estimatedPlaylistLengthSeconds: tracks.reduce((sum: number, track) => track.duration_ms / 1000 + sum, state.estimatedPlaylistLengthSeconds),
+      artists: { ...state.artists, [artist.uri]: { data: artist, tracks } }
+    }))
   }
 
-  async startProcessing() {
-    const playlist = await createPlaylist(
+  createPlaylist = async () => {
+    return await createPlaylist(
       this.state.me,
       this.state.location.name,
       {
         token: this.state.token
       }
-    );
-    for (const band of this.state.bands) {
-      await this.processBand(playlist, band);
+    )
+  }
+
+  async startLoadingArtistsFromSpotify() {
+    for (const artistUri of Object.keys(this.state.artists)) {
+      await this.loadArtistFromSpotify(this.state.artists[artistUri].data);
     }
   }
 
@@ -149,50 +169,57 @@ export default class App extends React.Component<{}, State> {
     const resp = await fetch(uri);
     if (resp.ok) {
       const data = await resp.json();
+      const artists = uniq<Artist>(
+        data.results.bindings.map(b => ({
+          name: b.Name.value,
+          uri: b.Band.value,
+          images: [],
+          genres: [],
+          popularity: 0,
+          followers: { total: 0 }
+        })),
+        band => band.uri).reduce((agg: SpotifyData, band: Artist) => ({ ...agg, [band.uri]: { data: band, tracks: [] as Track[] } }), {})
       this.setState({
         location,
-        bands: uniq(
-          data.results.bindings.map(b => ({
-            name: b.Name.value,
-            uri: b.Band.value,
-            processed: false
-          })),
-          band => band.uri
-        )
+        artists
       });
+      this.startLoadingArtistsFromSpotify()
     }
   }
 
   render() {
-    const { bands, location } = this.state;
+    const { artists, location } = this.state;
     return (
       <div>
         <LocationPicker onSelect={this.handleLocation.bind(this)} />
         {location !== null && (
-          <div>
+          <section>
             <h1>{location.name}</h1>
             <p>{location.abstract}</p>
-            <button onClick={() => this.startProcessing()}>
+            <button onClick={() => this.startLoadingArtistsFromSpotify()}>
               Create playlist "{location.name}"
             </button>
-          </div>
+          </section>
         )}
-        {bands.length > 0 && (
-          <React.Fragment>
-            <h2>Artists ({bands.length})</h2>
-            <ul>
-              {bands.map(band => (
-                <li
-                  style={{ color: band.processed ? "black" : "lightgray" }}
-                  key={band.uri}
-                >
-                  {band.name}
-                </li>
-              ))}
-            </ul>
-          </React.Fragment>
-        )}
+        <h2>Artists</h2>
+        <Grid>
+          {Object.values(artists).map((artist: ArtistWithTracks) => (
+            <ArtistCard
+              key={artist.data.uri}
+              artist={artist}
+            />
+          ))}
+        </Grid>
       </div>
     );
   }
+}
+
+const ArtistCard: React.SFC<{ artist: ArtistWithTracks }> = function ({ artist }) {
+  const image: string | null = artist.data.images.length > 0 ? artist.data.images[0].url : null;
+  return <div>
+    {image !== null ? <img style={{ objectFit: 'cover', width: 180, height: 180 }} src={image} alt="" /> : <div style={{ background: '#eee', width: 180, height: 180 }} />}
+    <h3>{artist.data.name}</h3>
+    {artist.data.genres.map(genre => <span key={genre}>{genre}</span>)}
+  </div>
 }
