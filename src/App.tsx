@@ -79,14 +79,10 @@ type ArtistWithTracks = {
   tracks: Track[];
 }
 
-type SpotifyData = {
-  [artistId: string]: ArtistWithTracks;
-}
-
 type State = {
   token: string | null;
   me: null | any;
-  artists: SpotifyData;
+  artists: ArtistWithTracks[];
   estimatedPlaylistLengthSeconds: number;
   location: null | Location;
 }
@@ -95,20 +91,21 @@ export default class App extends React.Component<{}, State> {
   state = {
     token: null,
     me: null,
-    artists: {},
+    artists: [],
     estimatedPlaylistLengthSeconds: 0,
     location: null
   }
 
-  async loadArtistFromSpotify(band: Artist) {
-    const artist = await findArtist(band.name, { token: this.state.token });
+  async loadArtistFromSpotify(band: ArtistWithTracks) {
+    const bandIndex = this.state.artists.indexOf(band)
+    const artist = await findArtist(band.data.name, { token: this.state.token });
     if (artist === null) {
       return;
     }
     const tracks = await getTopTracks(artist, { token: this.state.token });
     this.setState(state => ({
       estimatedPlaylistLengthSeconds: tracks.reduce((sum: number, track) => track.duration_ms / 1000 + sum, state.estimatedPlaylistLengthSeconds),
-      artists: { ...state.artists, [artist.uri]: { data: artist, tracks } }
+      artists: [{ data: artist, tracks }, ...state.artists] // TODO duplication
     }))
   }
 
@@ -123,8 +120,8 @@ export default class App extends React.Component<{}, State> {
   }
 
   async startLoadingArtistsFromSpotify() {
-    for (const artistUri of Object.keys(this.state.artists)) {
-      await this.loadArtistFromSpotify(this.state.artists[artistUri].data);
+    for (const artist of this.state.artists) {
+      await this.loadArtistFromSpotify(artist);
     }
   }
 
@@ -169,7 +166,7 @@ export default class App extends React.Component<{}, State> {
     const resp = await fetch(uri);
     if (resp.ok) {
       const data = await resp.json();
-      const artists = uniq<Artist>(
+      const artists: ArtistWithTracks[] = uniq<Artist>(
         data.results.bindings.map(b => ({
           name: b.Name.value,
           uri: b.Band.value,
@@ -178,7 +175,7 @@ export default class App extends React.Component<{}, State> {
           popularity: 0,
           followers: { total: 0 }
         })),
-        band => band.uri).reduce((agg: SpotifyData, band: Artist) => ({ ...agg, [band.uri]: { data: band, tracks: [] as Track[] } }), {})
+        band => band.uri).map((band: Artist) => ({ data: band, tracks: [] as Track[] }))
       this.setState({
         location,
         artists
@@ -201,7 +198,8 @@ export default class App extends React.Component<{}, State> {
             </button>
           </section>
         )}
-        <h2>Artists</h2>
+        <h2>Artists ({this.state.artists.length})</h2>
+        <p>Estimated playlist length: {Math.floor(this.state.estimatedPlaylistLengthSeconds / 3600)} hours</p>
         <Grid>
           {Object.values(artists).map((artist: ArtistWithTracks) => (
             <ArtistCard
