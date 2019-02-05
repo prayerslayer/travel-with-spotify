@@ -1,17 +1,15 @@
 import * as React from "react";
 import LocationPicker from "./LocationPicker";
 import uniq from "lodash-es/uniqBy";
+import Login from './components/Login'
 import {
-  loggedIn,
   findArtist,
-  getMe,
   createPlaylist,
   getTopTracks,
   addTracksToPlaylist
 } from "./api";
-import { Provider, Request } from "oauth2-client-js";
 import { Location } from "./graphql";
-import { Playlist, Artist, Track, Image } from "./spotify";
+import { Playlist, Artist, Track, Image, User } from "./spotify";
 import styled from 'styled-components'
 
 const Grid = styled.section`
@@ -80,81 +78,87 @@ type ArtistWithTracks = {
 }
 
 type State = {
-  token: string | null;
-  me: null | any;
-  artists: ArtistWithTracks[];
   estimatedPlaylistLengthSeconds: number;
-  location: null | Location;
 }
 
-export default class App extends React.Component<{}, State> {
+const RootContext = React.createContext({
+  token: null,
+  location: null,
+  artists: [],
+  me: null
+})
+
+type RootState = {
+  token: string | null;
+  setToken: (token: string) => void;
+  me: null | User;
+  setMe: (me: User) => void;
+  artists: ArtistWithTracks[];
+  setArtists: (artists: ArtistWithTracks[]) => void;
+  location: null | Location;
+  setLocation: (location: Location) => void;
+}
+
+export default class Root extends React.Component<{}, RootState>  {
+  constructor(p) {
+    super(p)
+    this.state = {
+      token: null,
+      setToken: this.setToken,
+      me: null,
+      setMe: this.setMe,
+      artists: [],
+      setArtists: this.setArtists,
+      location: null,
+      setLocation: this.setLocation
+    }
+  }
+
+  setToken = (token: string) => this.setState({ token })
+  setLocation = (location: Location) => this.setState({ location })
+  setArtists = (artists: ArtistWithTracks[]) => this.setState({ artists })
+  setMe = (me: User) => this.setState({ me })
+
+  render() {
+    return <RootContext.Provider value={this.state}>
+      <App
+        {...this.state}
+      />
+    </RootContext.Provider>
+  }
+}
+
+class App extends React.Component<RootState, State> {
   state = {
-    token: null,
-    me: null,
-    artists: [],
     estimatedPlaylistLengthSeconds: 0,
-    location: null
   }
 
   async loadArtistFromSpotify(band: ArtistWithTracks) {
-    const bandIndex = this.state.artists.indexOf(band)
-    const artist = await findArtist(band.data.name, { token: this.state.token });
+    const artist = await findArtist(band.data.name, { token: this.props.token });
     if (artist === null) {
       return;
     }
-    const tracks = await getTopTracks(artist, { token: this.state.token });
+    const tracks = await getTopTracks(artist, { token: this.props.token });
     this.setState(state => ({
       estimatedPlaylistLengthSeconds: tracks.reduce((sum: number, track) => track.duration_ms / 1000 + sum, state.estimatedPlaylistLengthSeconds),
-      artists: [{ data: artist, tracks }, ...state.artists] // TODO duplication
+      artists: [{ data: artist, tracks }, ...this.props.artists] // TODO duplication
     }))
   }
 
   createPlaylist = async () => {
     return await createPlaylist(
-      this.state.me,
-      this.state.location.name,
+      this.props.me,
+      this.props.location.name,
       {
-        token: this.state.token
+        token: this.props.token
       }
     )
   }
 
   async startLoadingArtistsFromSpotify() {
-    for (const artist of this.state.artists) {
+    // TODO needs to go in web worker
+    for (const artist of this.props.artists) {
       await this.loadArtistFromSpotify(artist);
-    }
-  }
-
-  async componentDidMount() {
-    const spotify = new Provider({
-      id: "spotify",
-      authorization_url: "https://accounts.spotify.com/authorize"
-    });
-
-    try {
-      spotify.parse(window.location.hash);
-      this.setState(
-        {
-          token: spotify.getAccessToken(),
-          me: await getMe({ token: spotify.getAccessToken() })
-        },
-        () => {
-          window.location.hash = "";
-        }
-      );
-    } catch (e) {
-      // Do login flow
-      if (!(await loggedIn({ token: this.state.token }))) {
-        var request = new Request({
-          client_id: "96116ce1fa57471ba2edf02d66c6f6c4",
-          redirect_uri: "http://localhost:1234",
-          scope: ["playlist-modify-public"]
-        });
-
-        var uri = spotify.requestToken(request);
-        spotify.remember(request);
-        window.location.href = uri;
-      }
     }
   }
 
@@ -176,16 +180,17 @@ export default class App extends React.Component<{}, State> {
           followers: { total: 0 }
         })),
         band => band.uri).map((band: Artist) => ({ data: band, tracks: [] as Track[] }))
-      this.setState({
-        location,
-        artists
-      });
+      this.props.setLocation(location)
+      this.props.setArtists(artists)
       this.startLoadingArtistsFromSpotify()
     }
   }
 
   render() {
-    const { artists, location } = this.state;
+    const { artists, location, token } = this.props;
+    if (token === null) {
+      return <Login token={this.props.token} setMe={this.props.setMe} setToken={this.props.setToken} />
+    }
     return (
       <div>
         <LocationPicker onSelect={this.handleLocation.bind(this)} />
@@ -198,7 +203,7 @@ export default class App extends React.Component<{}, State> {
             </button>
           </section>
         )}
-        <h2>Artists ({this.state.artists.length})</h2>
+        <h2>Artists ({this.props.artists.length})</h2>
         <p>Estimated playlist length: {Math.floor(this.state.estimatedPlaylistLengthSeconds / 3600)} hours</p>
         <Grid>
           {Object.values(artists).map((artist: ArtistWithTracks) => (
