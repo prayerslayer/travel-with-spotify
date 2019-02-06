@@ -75,10 +75,11 @@ function getQueryBandsIn(locationURI: string) {
 type ArtistWithTracks = {
   data: Artist;
   tracks: Track[];
+  loadedFromSpotify: boolean;
 }
 
 type State = {
-  estimatedPlaylistLengthSeconds: number;
+  minFollowers: number;
 }
 
 const RootContext = React.createContext({
@@ -130,19 +131,21 @@ export default class Root extends React.Component<{}, RootState>  {
 
 class App extends React.Component<RootState, State> {
   state = {
-    estimatedPlaylistLengthSeconds: 0,
+    minFollowers: 0,
   }
 
   async loadArtistFromSpotify(band: ArtistWithTracks) {
     const artist = await findArtist(band.data.name, { token: this.props.token });
+    const idx = this.props.artists.findIndex(listArtist => listArtist.data.uri === band.data.uri)
+    const newArtists = [...this.props.artists]
+    newArtists.splice(idx, 1);
     if (artist === null) {
+      this.props.setArtists(newArtists);
       return;
     }
     const tracks = await getTopTracks(artist, { token: this.props.token });
-    this.setState(state => ({
-      estimatedPlaylistLengthSeconds: tracks.reduce((sum: number, track) => track.duration_ms / 1000 + sum, state.estimatedPlaylistLengthSeconds),
-      artists: [{ data: artist, tracks }, ...this.props.artists] // TODO duplication
-    }))
+    newArtists.splice(idx, 0, { data: artist, tracks, loadedFromSpotify: true })
+    this.props.setArtists(newArtists);
   }
 
   createPlaylist = async () => {
@@ -179,7 +182,7 @@ class App extends React.Component<RootState, State> {
           popularity: 0,
           followers: { total: 0 }
         })),
-        band => band.uri).map((band: Artist) => ({ data: band, tracks: [] as Track[] }))
+        band => band.uri).map((band: Artist) => ({ data: band, loadedFromSpotify: false, tracks: [] as Track[] }))
       this.props.setLocation(location)
       this.props.setArtists(artists)
       this.startLoadingArtistsFromSpotify()
@@ -188,6 +191,8 @@ class App extends React.Component<RootState, State> {
 
   render() {
     const { artists, location, token } = this.props;
+    const artistsToShow = artists.filter(artist => artist.loadedFromSpotify).filter(artist => artist.data.followers.total >= this.state.minFollowers)
+    const estimatedPlaylistLengthSeconds = artistsToShow.reduce((sum, artist) => sum + artist.tracks.reduce((tracksum, track) => tracksum + track.duration_ms / 1000, 0), 0)
     if (token === null) {
       return <Login token={this.props.token} setMe={this.props.setMe} setToken={this.props.setToken} />
     }
@@ -208,10 +213,11 @@ class App extends React.Component<RootState, State> {
             }}>Clear selection</button>
           </section>
         )}
-        <h2>Artists ({this.props.artists.length})</h2>
-        <p>Estimated playlist length: {Math.floor(this.state.estimatedPlaylistLengthSeconds / 3600)} hours</p>
+        <h2>Artists ({artistsToShow.length})</h2>
+        <input type="range" min={0} step={1000} value={this.state.minFollowers} max={Math.max(...artists.map(artist => artist.data.followers.total))} onChange={(e) => this.setState({ minFollowers: +e.target.value })}></input>
+        <p>Estimated playlist length: {Math.floor(estimatedPlaylistLengthSeconds / 3600)} hours</p>
         <Grid>
-          {Object.values(artists).map((artist: ArtistWithTracks) => (
+          {Object.values(artistsToShow).map((artist: ArtistWithTracks) => (
             <ArtistCard
               key={artist.data.uri}
               artist={artist}
@@ -226,8 +232,10 @@ class App extends React.Component<RootState, State> {
 const ArtistCard: React.SFC<{ artist: ArtistWithTracks }> = function ({ artist }) {
   const image: string | null = artist.data.images.length > 0 ? artist.data.images[0].url : null;
   return <div>
-    {image !== null ? <img style={{ objectFit: 'cover', width: 180, height: 180 }} src={image} alt="" /> : <div style={{ background: '#eee', width: 180, height: 180 }} />}
+    {image !== null ? <img style={{ objectFit: 'cover', width: 180, height: 180 }} src={image} alt="" /> : <div style={{ background: '#eee', width: 180, height: 180 }}>No image</div>}
     <h3>{artist.data.name}</h3>
-    {artist.data.genres.map(genre => <span key={genre}>{genre}</span>)}
+    <ul>
+      {artist.data.genres.map(genre => <li key={genre}>{genre}</li>)}
+    </ul>
   </div>
 }
