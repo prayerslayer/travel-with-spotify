@@ -8,7 +8,7 @@ import {
   getTopTracks,
   addTracksToPlaylist
 } from "./api";
-import { Location } from "./graphql";
+import { Location } from "./sparql";
 import { Playlist, Artist, Track, Image, User } from "./spotify";
 import styled from 'styled-components'
 
@@ -193,7 +193,7 @@ class App extends React.Component<RootState, State> {
     }
     return (
       <div>
-        <LocationPicker onSelect={this.handleLocation.bind(this)} />
+        <LocationPicker selectedLocation={location} onSelect={this.handleLocation.bind(this)} />
         {location !== null && (
           <section>
             <h1>{location.name}</h1>
@@ -201,6 +201,11 @@ class App extends React.Component<RootState, State> {
             <button onClick={() => this.startLoadingArtistsFromSpotify()}>
               Create playlist "{location.name}"
             </button>
+            <button onClick={() => {
+              this.props.setLocation(null);
+              this.props.setArtists([])
+              // TODO cancel ongoing work
+            }}>Clear selection</button>
           </section>
         )}
         <h2>Artists ({this.props.artists.length})</h2>

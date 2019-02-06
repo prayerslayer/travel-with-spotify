@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Location } from "./graphql";
+import { Location } from "./sparql";
 import styled from 'styled-components';
 
 const Button = styled.button`
@@ -28,15 +28,31 @@ function getQueryLocationOf(wikipage: string) {
 
 type Props = {
   onSelect: (l: Location) => void;
+  selectedLocation: null | Location;
 }
 
 type State = {
   input: string;
+  examples: Location[];
+}
+
+const LocationCard: React.SFC<{ location: Location; onClick: (url: string) => void; }> = function ({ location, onClick }) {
+  return <div role="button" onClick={() => onClick(location.uri)}>
+    <h1>{location.name}</h1>
+    <p>
+      {location.abstract}
+    </p>
+  </div>
 }
 
 export default class LocationPicker extends React.Component<Props, State> {
   state = {
-    input: "https://en.wikipedia.org/wiki/Austria",
+    input: "",
+    examples: [
+      { name: 'Austria', uri: 'http://dbpedia.org/resource/Austria', abstract: 'Small country' },
+      { name: 'Finland', uri: 'http://dbpedia.org/resource/Finland', abstract: 'Larger country with fewer people' },
+      { name: 'Japan', uri: 'http://dbpedia.org/resource/Japan', abstract: 'The weird one' }
+    ]
   };
 
   handleText(e) {
@@ -66,16 +82,28 @@ export default class LocationPicker extends React.Component<Props, State> {
 
   render() {
     return (
-      <div className="Location">
-        <Input
-          type="text"
-          value={this.state.input}
-          placeholder="Paste wikipedia page"
-          onChange={this.handleText.bind(this)}
-        />
+      <section>
+        {this.props.selectedLocation === null &&
+          <React.Fragment>
+            <div>
+              <Input
+                type="text"
+                value={this.state.input}
+                placeholder="Paste wikipedia page"
+                onChange={this.handleText.bind(this)}
+              />
 
-        <Button onClick={this.handleClick.bind(this)}>Start</Button>
-      </div>
+              <Button onClick={this.handleClick.bind(this)}>Start</Button>
+            </div>
+            <div>
+              {this.state.examples.map(location =>
+                <LocationCard
+                  onClick={() => this.props.onSelect(location)}
+                  location={location} />
+              )}
+            </div>
+          </React.Fragment>}
+      </section>
     );
   }
 }
