@@ -1,15 +1,7 @@
 import * as React from "react";
 import { Location, getQueryLocationOf } from "./sparql";
 import styled from "styled-components";
-
-const Button = styled.button`
-  background: transparent;
-  border-radius: 3px;
-  border: 2px solid palevioletred;
-  color: palevioletred;
-  margin: 0 1em;
-  padding: 0.25em 1em;
-`;
+import { Button, Row, Heading, Paragraph } from "./components/Layout";
 
 const Input = styled.input`
   padding: 0.25em 1em;
@@ -25,15 +17,29 @@ type State = {
   examples: Location[];
 };
 
-const LocationCard: React.SFC<{
+const Card = styled.div`
+  width: 200px;
+  border: 1px solid #633;
+  border-radius: 2px;
+  padding: 10px;
+  margin: 5px;
+  user-select: none;
+  cursor: pointer;
+
+  :hover {
+    box-shadow: 0px 0px 3px #633;
+  }
+`;
+
+export const LocationCard: React.SFC<{
   location: Location;
   onClick: (url: string) => void;
 }> = function({ location, onClick }) {
   return (
-    <div role="button" onClick={() => onClick(location.uri)}>
-      <h1>{location.name}</h1>
-      <p>{location.abstract}</p>
-    </div>
+    <Card role="button" onClick={() => onClick(location.uri)}>
+      <Heading>{location.name}</Heading>
+      <Paragraph>{location.abstract}</Paragraph>
+    </Card>
   );
 };
 
@@ -44,22 +50,26 @@ export default class LocationPicker extends React.Component<Props, State> {
       {
         name: "Graz",
         uri: "http://dbpedia.org/resource/Graz",
-        abstract: "No one cares"
+        abstract:
+          'Graz has a long tradition as a "university town": its six universities have more than 44,000 students. Its "Old Town" is one of the best-preserved city centres in Central Europe.'
       },
       {
         name: "Vienna",
         uri: "http://dbpedia.org/resource/Vienna",
-        abstract: "Capital city"
+        abstract:
+          "Vienna is the capital and largest city of Austria and one of the nine states of Austria. Vienna is Austria’s primary city, with a population of about 1.8 million, and its cultural, economic, and political centre."
       },
       {
         name: "Finland",
         uri: "http://dbpedia.org/resource/Finland",
-        abstract: "Larger country with fewer people"
+        abstract:
+          "Finland is situated in the geographical region of Fennoscandia, which also includes Scandinavia. The majority of the population is concentrated in the southern region."
       },
       {
         name: "Japan",
         uri: "http://dbpedia.org/resource/Japan",
-        abstract: "The weird one"
+        abstract:
+          'Japan is an island country in East Asia. The kanji that make up Japan’s name mean "sun origin", and it is often called the "Land of the Rising Sun".'
       }
     ]
   };
@@ -104,14 +114,14 @@ export default class LocationPicker extends React.Component<Props, State> {
 
               <Button onClick={this.handleClick.bind(this)}>Start</Button>
             </div>
-            <div>
+            <Row>
               {this.state.examples.map(location => (
                 <LocationCard
                   onClick={() => this.props.onSelect(location)}
                   location={location}
                 />
               ))}
-            </div>
+            </Row>
           </React.Fragment>
         )}
       </section>

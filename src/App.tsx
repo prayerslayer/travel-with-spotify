@@ -1,5 +1,5 @@
 import * as React from "react";
-import LocationPicker from "./LocationPicker";
+import LocationPicker, { LocationCard } from "./LocationPicker";
 import uniq from "lodash-es/uniqBy";
 import partition from "lodash-es/partition";
 import sortBy from "lodash-es/sortBy";
@@ -13,6 +13,7 @@ import {
 import { Location, getQueryBandsIn } from "./sparql";
 import { Playlist, Artist, Track, Image, User } from "./spotify";
 import styled from "styled-components";
+import { Button, Heading } from "./components/Layout";
 
 const Grid = styled.section`
   display: grid;
@@ -215,9 +216,8 @@ class App extends React.Component<RootState, State> {
         />
         {location !== null && (
           <section>
-            <h1>{location.name}</h1>
-            <p>{location.abstract}</p>
-            <button
+            <LocationCard onClick={undefined} location={location} />
+            <Button
               onClick={() => {
                 this.props.setLocation(null);
                 this.props.setArtists([]);
@@ -225,7 +225,7 @@ class App extends React.Component<RootState, State> {
               }}
             >
               Clear selection
-            </button>
+            </Button>
           </section>
         )}
         {this.props.location !== null && (
@@ -260,7 +260,7 @@ class App extends React.Component<RootState, State> {
                 />
               </div>
               <div>
-                <button
+                <Button
                   onClick={() =>
                     this.createPlaylist(
                       this.state.playlistName,
@@ -272,7 +272,7 @@ class App extends React.Component<RootState, State> {
                   }
                 >
                   Create playlist "{this.state.playlistName}"
-                </button>
+                </Button>
               </div>
             </section>
             <ArtistGrid
@@ -294,7 +294,7 @@ const ArtistDetail: React.SFC<{ artist: ArtistWithTracks }> = function({
   );
   return (
     <React.Fragment>
-      <h3>{artist.data.name}</h3>
+      <Heading>{artist.data.name}</Heading>
       <div>{followerCount} followers</div>
       <div>{artist.data.popularity}/100 popularity</div>
       {artist.data.genres.length > 0 && (
@@ -315,16 +315,12 @@ const ArtistGrid: React.SFC<{
   artists: ArtistWithTracks[];
   indexOfLastIncludedArtist: number;
 }> = function({ artists, indexOfLastIncludedArtist }) {
-  const [
-    showDetailForArtistWithIndex,
-    setShowDetailForArtistWithIndex
-  ] = React.useState(-1);
+  const [showDetailFor, setShowDetailFor] = React.useState(-1);
   let artistsBefore = artists;
   let artistsAfter = [];
-  if (showDetailForArtistWithIndex >= 0) {
-    let quotient = Math.floor(showDetailForArtistWithIndex / 4);
-    let remainder = showDetailForArtistWithIndex % 4;
-    let pivot = (quotient + 1) * 4;
+  const showingDetail = showDetailFor >= 0;
+  if (showingDetail) {
+    let pivot = (Math.floor(showDetailFor / 4) + 1) * 4;
     artistsBefore = artists.slice(0, pivot);
     artistsAfter = artists.slice(pivot);
   }
@@ -332,32 +328,28 @@ const ArtistGrid: React.SFC<{
     <Grid>
       {artistsBefore.map((artist, i) => (
         <ArtistCard
-          onClick={() =>
-            setShowDetailForArtistWithIndex(
-              i !== showDetailForArtistWithIndex ? i : -1
-            )
-          }
+          onClick={() => setShowDetailFor(i !== showDetailFor ? i : -1)}
           key={artist.data.uri}
-          selected={showDetailForArtistWithIndex === i}
+          selected={showDetailFor === i}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}
         />
       ))}
-      {showDetailForArtistWithIndex >= 0 && (
+      {showingDetail && (
         <FullGridRow>
-          <ArtistDetail artist={artists[showDetailForArtistWithIndex]} />
+          <ArtistDetail artist={artists[showDetailFor]} />
         </FullGridRow>
       )}
       {artistsAfter.map((artist, i) => (
         <ArtistCard
           onClick={() =>
-            setShowDetailForArtistWithIndex(
-              artistsBefore.length + i !== showDetailForArtistWithIndex
+            setShowDetailFor(
+              artistsBefore.length + i !== showDetailFor
                 ? artistsBefore.length + i
                 : -1
             )
           }
-          selected={showDetailForArtistWithIndex === i}
+          selected={showDetailFor === i}
           key={artist.data.uri}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}

@@ -2,6 +2,7 @@ import * as React from "react";
 import { Provider, Request } from "oauth2-client-js";
 import { getMe, loggedIn } from "../api";
 import { User } from "../spotify";
+import { CenteredInPage, LargeButton } from "./Layout";
 
 type LoginProps = {
   token: string | null;
@@ -44,9 +45,11 @@ export default class Login extends React.Component<LoginProps> {
 
   render() {
     return (
-      <main>
-        <button onClick={this.login}>Login with Spotify</button>
-      </main>
+      <CenteredInPage>
+        <main>
+          <LargeButton onClick={this.login}>Login with Spotify</LargeButton>
+        </main>
+      </CenteredInPage>
     );
   }
 }
