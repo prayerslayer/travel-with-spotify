@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Location } from "./sparql";
+import { Location, getQueryLocationOf } from "./sparql";
 import styled from "styled-components";
 
 const Button = styled.button`
@@ -14,17 +14,6 @@ const Button = styled.button`
 const Input = styled.input`
   padding: 0.25em 1em;
 `;
-
-function getQueryLocationOf(wikipage: string) {
-  return `SELECT DISTINCT ?Location, ?Name, ?Abstract WHERE {
-    ?Location foaf:isPrimaryTopicOf <${wikipage}> .
-    ?Location foaf:name ?Name .
-    ?Location dbo:abstract ?Abstract .
-    FILTER langMatches( lang(?Abstract), "EN" ) .
-    FILTER langMatches ( lang(?Name), "EN" )
-  }
-  LIMIT 1`;
-}
 
 type Props = {
   onSelect: (l: Location) => void;

@@ -19,6 +19,8 @@ export async function getMe({ token }: APIOptions): Promise<User> {
   return await resp.json();
 }
 
+async function getArtist(id: string, { token }: APIOptions) {}
+
 export async function findArtist(
   name: string,
   { token }: APIOptions

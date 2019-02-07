@@ -10,7 +10,7 @@ import {
   getTopTracks,
   addTracksToPlaylist
 } from "./api";
-import { Location } from "./sparql";
+import { Location, getQueryBandsIn } from "./sparql";
 import { Playlist, Artist, Track, Image, User } from "./spotify";
 import styled from "styled-components";
 
@@ -27,55 +27,6 @@ const Grid = styled.section`
 const FullGridRow = styled.div`
   grid-column: 1 / span 4;
 `;
-
-function getQueryBandsIn(locationURI: string) {
-  return `SELECT ?Band, ?Name WHERE {
-  # hometown
-  # 0 hop
-  {
-    ?Band foaf:name ?Name .
-    ?Band a schema:MusicGroup .
-    ?Band dbo:hometown <${locationURI}>
-  }
-  # 1 hop
-  UNION {
-    ?Band foaf:name ?Name .
-    ?Band a schema:MusicGroup .
-    ?Band dbo:hometown ?p1ht1 .
-    ?p1ht1 dbo:isPartOf <${locationURI}>
-  }
-  # 2 hop
-  UNION {
-    ?Band foaf:name ?Name .
-    ?Band a schema:MusicGroup .
-    ?Band dbo:hometown ?p1ht2 .
-    ?p1ht2 dbo:isPartOf ?p2ht2 .
-    ?p2ht2 dbo:isPartOf <${locationURI}>
-  }
-  # birthplace
-  # 0 hop
-  UNION {
-    ?Band foaf:name ?Name .
-    ?Band a schema:MusicGroup .
-    ?Band dbo:birthPlace <${locationURI}>
-  }
-  # 1 hop
-  UNION {
-    ?Band foaf:name ?Name .
-    ?Band a schema:MusicGroup .
-    ?Band dbo:birthPlace ?p1bp1 .
-    ?p1bp1 dbo:isPartOf <${locationURI}>
-  }
-  # 2 hop
-  UNION {
-    ?Band foaf:name ?Name .
-    ?Band a schema:MusicGroup .
-    ?Band dbo:birthPlace ?p1bp2 .
-    ?p1bp2 dbo:isPartOf ?p2bp2 .
-    ?p2bp2 dbo:isPartOf <${locationURI}>
-  }
-}`;
-}
 
 type ArtistWithTracks = {
   data: Artist;
@@ -335,6 +286,31 @@ class App extends React.Component<RootState, State> {
   }
 }
 
+const ArtistDetail: React.SFC<{ artist: ArtistWithTracks }> = function({
+  artist
+}) {
+  const followerCount = new Intl.NumberFormat().format(
+    artist.data.followers.total
+  );
+  return (
+    <React.Fragment>
+      <h3>{artist.data.name}</h3>
+      <div>{followerCount} followers</div>
+      <div>{artist.data.popularity}/100 popularity</div>
+      {artist.data.genres.length > 0 && (
+        <React.Fragment>
+          <h5>Genres</h5>
+          <ul>
+            {artist.data.genres.map(genre => (
+              <li key={genre}>{genre}</li>
+            ))}
+          </ul>
+        </React.Fragment>
+      )}
+    </React.Fragment>
+  );
+};
+
 const ArtistGrid: React.SFC<{
   artists: ArtistWithTracks[];
   indexOfLastIncludedArtist: number;
@@ -357,32 +333,31 @@ const ArtistGrid: React.SFC<{
       {artistsBefore.map((artist, i) => (
         <ArtistCard
           onClick={() =>
-            i !== showDetailForArtistWithIndex
-              ? setShowDetailForArtistWithIndex(i)
-              : -1
+            setShowDetailForArtistWithIndex(
+              i !== showDetailForArtistWithIndex ? i : -1
+            )
           }
           key={artist.data.uri}
+          selected={showDetailForArtistWithIndex === i}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}
         />
       ))}
       {showDetailForArtistWithIndex >= 0 && (
         <FullGridRow>
-          <h3>{artists[showDetailForArtistWithIndex].data.name}</h3>
-          <ul>
-            {artists[showDetailForArtistWithIndex].data.genres.map(genre => (
-              <li key={genre}>{genre}</li>
-            ))}
-          </ul>
+          <ArtistDetail artist={artists[showDetailForArtistWithIndex]} />
         </FullGridRow>
       )}
       {artistsAfter.map((artist, i) => (
         <ArtistCard
           onClick={() =>
-            i - 1 !== showDetailForArtistWithIndex
-              ? setShowDetailForArtistWithIndex(i - 1)
-              : -1
+            setShowDetailForArtistWithIndex(
+              artistsBefore.length + i !== showDetailForArtistWithIndex
+                ? artistsBefore.length + i
+                : -1
+            )
           }
+          selected={showDetailForArtistWithIndex === i}
           key={artist.data.uri}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}
@@ -395,11 +370,13 @@ const ArtistGrid: React.SFC<{
 type ArtistCardProps = {
   artist: ArtistWithTracks;
   includedInPlaylist: boolean;
+  selected: boolean;
   onClick: () => void;
 };
 const ArtistCard: React.SFC<ArtistCardProps> = function({
   artist,
   onClick,
+  selected,
   includedInPlaylist
 }) {
   const image: string | null =
@@ -408,7 +385,10 @@ const ArtistCard: React.SFC<ArtistCardProps> = function({
     <div
       onClick={() => onClick()}
       title={artist.data.name}
-      style={{ filter: !includedInPlaylist ? "opacity(33%)" : undefined }}
+      style={{
+        filter: !includedInPlaylist ? "opacity(33%)" : undefined,
+        outline: selected ? "2px solid yellow" : undefined
+      }}
     >
       {image !== null ? (
         <img
