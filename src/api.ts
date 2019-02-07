@@ -68,7 +68,7 @@ export async function addTracksToPlaylist(playlist: Playlist, tracks: Track[], {
   });
 }
 
-export async function createPlaylist(user: User, name: string, { token }: APIOptions): Promise<Playlist> {
+export async function getOrCreatePlaylist(user: User, name: string, { token }: APIOptions): Promise<Playlist> {
   // First check if one exists
   let resp = await fetch(
     `https://api.spotify.com/v1/users/${user.id}/playlists`,

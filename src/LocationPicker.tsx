@@ -49,7 +49,7 @@ export default class LocationPicker extends React.Component<Props, State> {
   state = {
     input: "",
     examples: [
-      { name: 'Austria', uri: 'http://dbpedia.org/resource/Austria', abstract: 'Small country' },
+      { name: 'Vienna', uri: 'http://dbpedia.org/resource/Vienna', abstract: 'Capital city' },
       { name: 'Finland', uri: 'http://dbpedia.org/resource/Finland', abstract: 'Larger country with fewer people' },
       { name: 'Japan', uri: 'http://dbpedia.org/resource/Japan', abstract: 'The weird one' }
     ]
