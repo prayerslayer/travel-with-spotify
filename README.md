@@ -4,7 +4,8 @@ Takes a Wikipedia page of a place. Creates a Spotify playlist from artists with 
 
 ## TODO
 
-- Remove static playlist name and location placeholder
+- Make proper cancel button
+- Make loading indicator
 - Make a bit more beautiful
 - Deploy somewhere (zeit.sh? github pages?)
 - Actual location search input? Possibly with a map :OOOOO
