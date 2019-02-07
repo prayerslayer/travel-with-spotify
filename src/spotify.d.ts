@@ -12,9 +12,7 @@
 // type: "playlist"
 // uri: "spotify:user:prayerslaye
 
-export type Playlist = {
-
-}
+export type Playlist = {};
 
 // display_name: "prayerslayer"
 // external_urls: {spotify: "https://open.spotify.com/user/prayerslayer"}
@@ -29,13 +27,13 @@ export type User = {
   id: string;
   type: "user";
   uri: string;
-}
+};
 
 type Image = {
   width: number;
   height: number;
   url: string;
-}
+};
 
 // external_urls: {spotify: "https://open.spotify.com/artist/3pxUWacRT5JtY6FwvwaylQ"}
 // followers: {href: null, total: 182}
@@ -57,7 +55,7 @@ export type Artist = {
   images: Image[];
   popularity: number;
   followers: { total: number };
-}
+};
 
 // album: {album_type: "album",…}
 // artists: [{external_urls: {spotify: "https://open.spotify.com/artist/3pxUWacRT5JtY6FwvwaylQ"},…}]
@@ -83,7 +81,7 @@ export type Track = {
   id: string;
   name: string;
   duration_ms: number;
-}
+};
 
 export type PagedResult<Content> = {
   href: string;
@@ -93,4 +91,4 @@ export type PagedResult<Content> = {
   previous: null | string;
   total: number;
   items: Content[];
-}
+};

@@ -1,16 +1,15 @@
-import * as React from 'react';
+import * as React from "react";
 import { Provider, Request } from "oauth2-client-js";
-import { getMe, loggedIn } from '../api';
-import { User } from '../spotify';
+import { getMe, loggedIn } from "../api";
+import { User } from "../spotify";
 
 type LoginProps = {
   token: string | null;
   setToken: (token: string) => void;
   setMe: (me: User) => void;
-}
+};
 
 export default class Login extends React.Component<LoginProps> {
-
   async componentDidMount() {
     try {
       const spotify = new Provider({
@@ -19,9 +18,9 @@ export default class Login extends React.Component<LoginProps> {
       });
 
       spotify.parse(window.location.hash);
-      const token = spotify.getAccessToken()
+      const token = spotify.getAccessToken();
       this.props.setToken(token);
-      this.props.setMe(await getMe({ token }))
+      this.props.setMe(await getMe({ token }));
     } catch (e) {
       // Do nothing
     }
@@ -41,11 +40,13 @@ export default class Login extends React.Component<LoginProps> {
     const uri = spotify.requestToken(request);
     spotify.remember(request);
     window.location.href = uri;
-  }
+  };
 
   render() {
-    return <main>
-      <button onClick={this.login}>Login with Spotify</button>
-    </main>
+    return (
+      <main>
+        <button onClick={this.login}>Login with Spotify</button>
+      </main>
+    );
   }
 }

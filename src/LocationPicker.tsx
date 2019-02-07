@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Location } from "./sparql";
-import styled from 'styled-components';
+import styled from "styled-components";
 
 const Button = styled.button`
   background: transparent;
@@ -29,29 +29,49 @@ function getQueryLocationOf(wikipage: string) {
 type Props = {
   onSelect: (l: Location) => void;
   selectedLocation: null | Location;
-}
+};
 
 type State = {
   input: string;
   examples: Location[];
-}
+};
 
-const LocationCard: React.SFC<{ location: Location; onClick: (url: string) => void; }> = function ({ location, onClick }) {
-  return <div role="button" onClick={() => onClick(location.uri)}>
-    <h1>{location.name}</h1>
-    <p>
-      {location.abstract}
-    </p>
-  </div>
-}
+const LocationCard: React.SFC<{
+  location: Location;
+  onClick: (url: string) => void;
+}> = function({ location, onClick }) {
+  return (
+    <div role="button" onClick={() => onClick(location.uri)}>
+      <h1>{location.name}</h1>
+      <p>{location.abstract}</p>
+    </div>
+  );
+};
 
 export default class LocationPicker extends React.Component<Props, State> {
   state = {
     input: "",
     examples: [
-      { name: 'Vienna', uri: 'http://dbpedia.org/resource/Vienna', abstract: 'Capital city' },
-      { name: 'Finland', uri: 'http://dbpedia.org/resource/Finland', abstract: 'Larger country with fewer people' },
-      { name: 'Japan', uri: 'http://dbpedia.org/resource/Japan', abstract: 'The weird one' }
+      {
+        name: "Graz",
+        uri: "http://dbpedia.org/resource/Graz",
+        abstract: "No one cares"
+      },
+      {
+        name: "Vienna",
+        uri: "http://dbpedia.org/resource/Vienna",
+        abstract: "Capital city"
+      },
+      {
+        name: "Finland",
+        uri: "http://dbpedia.org/resource/Finland",
+        abstract: "Larger country with fewer people"
+      },
+      {
+        name: "Japan",
+        uri: "http://dbpedia.org/resource/Japan",
+        abstract: "The weird one"
+      }
     ]
   };
 
@@ -83,7 +103,7 @@ export default class LocationPicker extends React.Component<Props, State> {
   render() {
     return (
       <section>
-        {this.props.selectedLocation === null &&
+        {this.props.selectedLocation === null && (
           <React.Fragment>
             <div>
               <Input
@@ -96,13 +116,15 @@ export default class LocationPicker extends React.Component<Props, State> {
               <Button onClick={this.handleClick.bind(this)}>Start</Button>
             </div>
             <div>
-              {this.state.examples.map(location =>
+              {this.state.examples.map(location => (
                 <LocationCard
                   onClick={() => this.props.onSelect(location)}
-                  location={location} />
-              )}
+                  location={location}
+                />
+              ))}
             </div>
-          </React.Fragment>}
+          </React.Fragment>
+        )}
       </section>
     );
   }
