@@ -2,15 +2,21 @@ export type Location = {
   uri: string;
   name: string;
   abstract: string;
+  image?: string;
 };
 
 export function getQueryLocationOf(wikipage: string) {
-  return `SELECT DISTINCT ?Location, ?Name, ?Abstract WHERE {
+  return `SELECT DISTINCT ?Location, ?Name, ?Abstract, ?Image WHERE {
     ?Location foaf:isPrimaryTopicOf <${wikipage}> .
-    ?Location foaf:name ?Name .
     ?Location dbo:abstract ?Abstract .
-    FILTER langMatches( lang(?Abstract), "EN" ) .
-    FILTER langMatches ( lang(?Name), "EN" )
+    OPTIONAL {
+      ?Location foaf:name ?Name .
+      FILTER langMatches ( lang(?Name), "EN" )
+    }
+    OPTIONAL {
+      ?Location dbo:thumbnail ?Image
+    }
+    FILTER langMatches( lang(?Abstract), "EN" )
   }
   LIMIT 1`;
 }

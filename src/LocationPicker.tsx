@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Location, getQueryLocationOf } from "./sparql";
 import styled from "styled-components";
+import _get from "lodash-es/get";
 import { Button, Row, Heading, Paragraph } from "./components/Layout";
 
 const Input = styled.input`
@@ -30,6 +31,22 @@ const Card = styled.div`
     box-shadow: 0px 0px 3px #633;
   }
 `;
+
+export const LargeLocation: React.SFC<{
+  location: Location;
+}> = function({ location }) {
+  const excerpt = location.abstract.substr(0, 500);
+  return (
+    <section>
+      <Heading>{location.name}</Heading>
+      {location.image && <img src={location.image} alt="" />}
+      <Paragraph>
+        {excerpt}
+        {excerpt.length < location.abstract.length ? "…" : null}
+      </Paragraph>
+    </section>
+  );
+};
 
 export const LocationCard: React.SFC<{
   location: Location;
@@ -86,11 +103,13 @@ export default class LocationPicker extends React.Component<Props, State> {
       getQueryLocationOf(text)
     )}&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query`;
     const resp = await fetch(uri);
+    const fallbackText = text.split("/")[text.split("/").length - 1];
     if (resp.ok) {
       const data = (await resp.json()).results.bindings.map(b => ({
         uri: b.Location.value,
-        name: b.Name.value,
-        abstract: b.Abstract.value
+        name: _get(b, "Name.value", fallbackText),
+        abstract: b.Abstract.value,
+        image: _get(b, "Image.value")
       }));
       if (data.length > 0) {
         this.props.onSelect(data[0]);

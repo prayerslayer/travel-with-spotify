@@ -1,5 +1,5 @@
 import * as React from "react";
-import LocationPicker, { LocationCard } from "./LocationPicker";
+import LocationPicker, { LocationCard, LargeLocation } from "./LocationPicker";
 import uniq from "lodash-es/uniqBy";
 import partition from "lodash-es/partition";
 import sortBy from "lodash-es/sortBy";
@@ -25,8 +25,13 @@ const Grid = styled.section`
   align-content: center;
 `;
 
-const FullGridRow = styled.div`
+const GridInlay = styled.section`
   grid-column: 1 / span 4;
+  background: crimson;
+  color: white;
+  padding: 10px;
+  width: 100%;
+  text-align: center;
 `;
 
 type ArtistWithTracks = {
@@ -216,7 +221,7 @@ class App extends React.Component<RootState, State> {
         />
         {location !== null && (
           <section>
-            <LocationCard onClick={undefined} location={location} />
+            <LargeLocation location={location} />
             <Button
               onClick={() => {
                 this.props.setLocation(null);
@@ -286,6 +291,27 @@ class App extends React.Component<RootState, State> {
   }
 }
 
+const DisplayFont = styled.div`
+  font-size: 3rem;
+  font-weight: lighter;
+`;
+
+const Badge = styled.span`
+  border-radius: 15px;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  margin: 2.5px;
+  background: darkred;
+  color: white;
+  white-space: nowrap;
+`;
+
+const BadgeContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+`;
+
 const ArtistDetail: React.SFC<{ artist: ArtistWithTracks }> = function({
   artist
 }) {
@@ -294,19 +320,13 @@ const ArtistDetail: React.SFC<{ artist: ArtistWithTracks }> = function({
   );
   return (
     <React.Fragment>
-      <Heading>{artist.data.name}</Heading>
-      <div>{followerCount} followers</div>
-      <div>{artist.data.popularity}/100 popularity</div>
-      {artist.data.genres.length > 0 && (
-        <React.Fragment>
-          <h5>Genres</h5>
-          <ul>
-            {artist.data.genres.map(genre => (
-              <li key={genre}>{genre}</li>
-            ))}
-          </ul>
-        </React.Fragment>
-      )}
+      <DisplayFont>{artist.data.name}</DisplayFont>
+      <Heading>{followerCount} followers</Heading>
+      <BadgeContainer>
+        {artist.data.genres.map((genre, i) => (
+          <Badge key={genre}>{genre}</Badge>
+        ))}
+      </BadgeContainer>
     </React.Fragment>
   );
 };
@@ -336,9 +356,9 @@ const ArtistGrid: React.SFC<{
         />
       ))}
       {showingDetail && (
-        <FullGridRow>
+        <GridInlay>
           <ArtistDetail artist={artists[showDetailFor]} />
-        </FullGridRow>
+        </GridInlay>
       )}
       {artistsAfter.map((artist, i) => (
         <ArtistCard
@@ -349,9 +369,11 @@ const ArtistGrid: React.SFC<{
                 : -1
             )
           }
-          selected={showDetailFor === i}
+          selected={showDetailFor === artistsBefore.length + i}
           key={artist.data.uri}
-          includedInPlaylist={i <= indexOfLastIncludedArtist}
+          includedInPlaylist={
+            artistsBefore.length + i <= indexOfLastIncludedArtist
+          }
           artist={artist}
         />
       ))}
@@ -378,19 +400,29 @@ const ArtistCard: React.SFC<ArtistCardProps> = function({
       onClick={() => onClick()}
       title={artist.data.name}
       style={{
-        filter: !includedInPlaylist ? "opacity(33%)" : undefined,
-        outline: selected ? "2px solid yellow" : undefined
+        outline: selected ? "10px solid crimson" : undefined
       }}
     >
       {image !== null ? (
         <img
-          style={{ objectFit: "cover", width: 180, height: 180 }}
+          style={{
+            objectFit: "cover",
+            width: 180,
+            height: 180,
+            filter: !includedInPlaylist ? "opacity(33%)" : undefined
+          }}
           src={image}
           alt=""
         />
       ) : (
         <div
-          style={{ background: "#fef", color: "fff", width: 180, height: 180 }}
+          style={{
+            background: "#fef",
+            color: "fff",
+            width: 180,
+            height: 180,
+            filter: !includedInPlaylist ? "opacity(33%)" : undefined
+          }}
         >
           {artist.data.name}
         </div>
