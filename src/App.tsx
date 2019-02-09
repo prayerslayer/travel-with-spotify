@@ -180,7 +180,8 @@ const PlaylistControls: React.FunctionComponent<
           </td>
         </tr>
         <tr>
-          <td colSpan={2}>
+          <td />
+          <td>
             <MediumButton
               onClick={() =>
                 onCreate({
@@ -190,7 +191,7 @@ const PlaylistControls: React.FunctionComponent<
                 })
               }
             >
-              Create playlist "{playlistName}"
+              Create playlist
             </MediumButton>
           </td>
         </tr>
@@ -261,15 +262,21 @@ class App extends React.Component<RootState, State> {
     this.props.setArtists(newArtists);
   }
 
-  createPlaylist = async (name: string, artists: ArtistWithTracks[]) => {
+  createPlaylist = async (
+    name: string,
+    artists: ArtistWithTracks[],
+    tracksPerArtist: number
+  ) => {
     const playlist = await getOrCreatePlaylist(this.props.me, name, {
       token: this.props.token
     });
+    const tracks: Track[] = [];
     for (const artist of artists) {
-      await addTracksToPlaylist(playlist, artist.tracks, {
-        token: this.props.token
-      });
+      tracks.push(...artist.tracks.slice(0, tracksPerArtist));
     }
+    await addTracksToPlaylist(playlist, tracks, {
+      token: this.props.token
+    });
   };
 
   async startLoadingArtistsFromSpotify() {
@@ -351,10 +358,11 @@ class App extends React.Component<RootState, State> {
             onChange={s => {
               this.setState(s);
             }}
-            onCreate={({ playlistName }) => {
+            onCreate={({ playlistName, tracksPerArtist }) => {
               this.createPlaylist(
                 playlistName,
-                artistsByPopularity.slice(0, indexOfLastIncludedArtist + 1)
+                artistsByPopularity.slice(0, indexOfLastIncludedArtist + 1),
+                tracksPerArtist
               );
             }}
           />
@@ -434,7 +442,7 @@ const ArtistGrid: React.SFC<{
       {artistsBefore.map((artist, i) => (
         <ArtistCard
           onClick={() => setShowDetailFor(i !== showDetailFor ? i : -1)}
-          key={i + artist.data.uri}
+          key={artist.data.uri}
           selected={showDetailFor === i}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}
@@ -453,7 +461,7 @@ const ArtistGrid: React.SFC<{
             )
           }
           selected={showDetailFor === artistsBefore.length + i}
-          key={i + artist.data.uri}
+          key={artist.data.uri}
           includedInPlaylist={
             artistsBefore.length + i <= indexOfLastIncludedArtist
           }

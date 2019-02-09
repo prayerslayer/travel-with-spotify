@@ -1,5 +1,6 @@
 import sortBy from "lodash-es/sortBy";
 import { User, Artist, Playlist, Track } from "./spotify";
+import chunk from "lodash-es/chunk";
 
 type APIOptions = {
   token: string;
@@ -68,16 +69,19 @@ export async function addTracksToPlaylist(
   tracks: Track[],
   { token }: APIOptions
 ): Promise<void> {
-  await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      uris: tracks.map(track => track.uri)
-    })
-  });
+  const trackChunks = chunk(tracks, 100);
+  for (const trackChunk of trackChunks) {
+    await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        uris: trackChunk.map(track => track.uri)
+      })
+    });
+  }
 }
 
 export async function getOrCreatePlaylist(
