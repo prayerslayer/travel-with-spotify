@@ -20,7 +20,7 @@ import {
   ArtistWithTracks
 } from "./spotify";
 import styled from "styled-components";
-import { Button, Heading, CenteredInPage } from "./components/Layout";
+import { Button, Heading, LargeInput, MediumButton } from "./components/Layout";
 import LazyImage from "./components/LazyImage";
 
 const Grid = styled.section`
@@ -108,6 +108,12 @@ export default class Root extends React.Component<{}, RootState> {
   }
 }
 
+const PlaylistControlTable = styled.table`
+  margin: 25px auto;
+  padding: 25px;
+  color: white;
+  background: forestgreen;
+`;
 type PlaylistCallback<K extends keyof State> = (s: Pick<State, K>) => void;
 const PlaylistControls: React.FunctionComponent<
   State & {
@@ -122,54 +128,74 @@ const PlaylistControls: React.FunctionComponent<
   minPlaylistLengthHours
 }) {
   return (
-    <section>
-      <div>
-        <label htmlFor="playlistname">Playlist Name</label>
-        <input
-          id="playlistname"
-          type="text"
-          value={playlistName}
-          onChange={e => onChange({ playlistName: e.target.value })}
-        />
-      </div>
-      <div>
-        <label htmlFor="playlisttrackperartist">
-          {tracksPerArtist} Tracks per Artist
-        </label>
-        <input
-          type="range"
-          min={1}
-          max={10}
-          step={1}
-          onChange={e => onChange({ tracksPerArtist: +e.target.value })}
-        />
-      </div>
-      <div>
-        <label htmlFor="playlistlength">Desired playlist length (hours)</label>
-        <input
-          id="playlistlength"
-          type="number"
-          min={1}
-          value={minPlaylistLengthHours}
-          onChange={e =>
-            onChange({ minPlaylistLengthHours: Math.max(1, +e.target.value) })
-          }
-        />
-      </div>
-      <div>
-        <Button
-          onClick={() =>
-            onCreate({
-              playlistName,
-              tracksPerArtist,
-              minPlaylistLengthHours
-            })
-          }
-        >
-          Create playlist "{playlistName}"
-        </Button>
-      </div>
-    </section>
+    <PlaylistControlTable>
+      <tbody>
+        <tr>
+          <td>
+            <label htmlFor="playlistname">Playlist Name</label>
+          </td>
+          <td>
+            <LargeInput
+              id="playlistname"
+              type="text"
+              value={playlistName}
+              onChange={e => onChange({ playlistName: e.target.value })}
+            />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label htmlFor="playlisttrackperartist">
+              {tracksPerArtist} Tracks per Artist
+            </label>
+          </td>
+          <td>
+            <LargeInput
+              type="range"
+              min={1}
+              max={10}
+              step={1}
+              onChange={e => onChange({ tracksPerArtist: +e.target.value })}
+            />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label htmlFor="playlistlength">
+              Desired playlist length (hours)
+            </label>
+          </td>
+          <td>
+            <LargeInput
+              id="playlistlength"
+              type="number"
+              min={1}
+              value={minPlaylistLengthHours}
+              onChange={e =>
+                onChange({
+                  minPlaylistLengthHours: Math.max(1, +e.target.value)
+                })
+              }
+            />
+          </td>
+        </tr>
+        <tr>
+          <td colSpan={2}>
+            <MediumButton
+              onClick={() =>
+                onCreate({
+                  playlistName,
+                  tracksPerArtist,
+                  minPlaylistLengthHours
+                })
+              }
+            >
+              Create playlist "{playlistName}"
+            </MediumButton>
+          </td>
+        </tr>
+      </tbody>
+    </PlaylistControlTable>
   );
 };
 
@@ -461,11 +487,14 @@ const ArtistCard: React.SFC<ArtistCardProps> = function({
           objectFit: "cover",
           filter: !includedInPlaylist ? "opacity(33%)" : undefined
         }}
-        src={image.url}
+        src={image && image.url}
         placeholder={
           <div
             style={{
-              background: "#fef",
+              background: "crimson",
+              alignItems: "center",
+              justifyContent: "center",
+              display: "flex",
               color: "fff",
               width: 180,
               height: 180,

@@ -34,6 +34,10 @@ export const Button = styled.button`
   }
 `;
 
+export const MediumButton = styled(Button)`
+  font-size: 1.25rem;
+`;
+
 export const LargeButton = styled(Button)`
   font-size: 2rem;
 `;
@@ -52,4 +56,10 @@ export const Paragraph = styled.p`
   + p {
     margin-top: 10px;
   }
+`;
+
+export const LargeInput = styled.input`
+  font-size: 1.25rem;
+  width: 100%;
+  margin: 5px;
 `;

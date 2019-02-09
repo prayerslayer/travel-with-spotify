@@ -8,7 +8,9 @@ import {
   Heading,
   Paragraph,
   Col,
-  LargeButton
+  LargeButton,
+  LargeInput,
+  MediumButton
 } from "./components/Layout";
 import LazyImage from "./components/LazyImage";
 
@@ -39,7 +41,7 @@ const Card = styled(Col)`
 
 const LargeCard = styled(Row)`
   align-items: center;
-  justify-content: space-around;
+  justify-content: space-between;
   background: royalblue;
   color: white;
   padding: 10px;
@@ -57,26 +59,9 @@ export const LargeLocation: React.SFC<{
   const excerpt = location.abstract.substr(0, 500);
   return (
     <LargeCard>
-      {location.image && (
-        <LazyImage
-          placeholder={null}
-          width={200}
-          height={200}
-          style={{ margin: 25 }}
-          src={location.image}
-          alt=""
-        />
-      )}
-      <section>
-        <Heading>{location.name}</Heading>
-        <Paragraph>
-          {excerpt}
-          {excerpt.length < location.abstract.length ? "…" : null}
-        </Paragraph>
-      </section>
-      <LargeButton style={{ marginLeft: 25 }} onClick={() => onClose()}>
-        &times;
-      </LargeButton>
+      <div />
+      <Heading>{location.name}</Heading>
+      <LargeButton onClick={() => onClose()}>&times;</LargeButton>
     </LargeCard>
   );
 };
@@ -132,7 +117,13 @@ export default class LocationPicker extends React.Component<Props, State> {
     });
   }
 
-  async handleClick() {
+  handleKey(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      this.fetchLocation();
+    }
+  }
+
+  async fetchLocation() {
     const text = this.state.input.replace("https://", "http://");
     const uri = `https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=${encodeURIComponent(
       getQueryLocationOf(text)
@@ -158,17 +149,20 @@ export default class LocationPicker extends React.Component<Props, State> {
       <section>
         {this.props.selectedLocation === null && (
           <React.Fragment>
-            <div>
-              <Input
+            <Row>
+              <LargeInput
                 type="text"
                 autoFocus
                 value={this.state.input}
                 placeholder="Paste wikipedia page"
                 onChange={this.handleText.bind(this)}
+                onKeyUp={this.handleKey.bind(this)}
               />
 
-              <Button onClick={this.handleClick.bind(this)}>Start</Button>
-            </div>
+              <MediumButton onClick={this.fetchLocation.bind(this)}>
+                Start
+              </MediumButton>
+            </Row>
             <Row>
               {this.state.examples.map(location => (
                 <LocationCard
