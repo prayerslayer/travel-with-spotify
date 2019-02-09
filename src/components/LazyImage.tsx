@@ -36,6 +36,7 @@ type Props = {
   alt: string;
   height: number;
   src: string;
+  placeholder: React.ReactNode;
   style?: { [name: string]: any };
   onLoad?: () => void;
 };
@@ -74,7 +75,10 @@ export default class LazyImage extends React.Component<Props, State> {
   };
 
   handleIntersection = (event: IntersectionObserverEntry) => {
-    if (event.isIntersecting) {
+    if (
+      event.isIntersecting &&
+      this.state.imageFetchState !== ImageFetchState.done
+    ) {
       this.loadImage().then(
         () => typeof this.props.onLoad === "function" && this.props.onLoad()
       );
@@ -82,6 +86,9 @@ export default class LazyImage extends React.Component<Props, State> {
   };
 
   render() {
+    if (!this.props.src) {
+      return this.props.placeholder;
+    }
     return (
       <React.Fragment>
         {

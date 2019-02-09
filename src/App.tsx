@@ -38,9 +38,21 @@ const GridInlay = styled.section`
   background: crimson;
   color: white;
   padding: 10px 0px;
-  margin-top: -10px;
   width: 100%;
   text-align: center;
+
+  &::before {
+    content: "";
+    display: block;
+    position: relative;
+    top: -20px;
+    width: 0;
+    height: 0;
+    left: ${props => props.left}px;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid crimson;
+  }
 `;
 
 type State = {
@@ -357,14 +369,16 @@ const BadgeContainer = styled.div`
   justify-content: center;
 `;
 
-const ArtistDetail: React.SFC<{ artist: ArtistWithTracks }> = function({
-  artist
-}) {
+const ArtistDetail: React.SFC<{
+  artist: ArtistWithTracks;
+  index: number;
+}> = function({ artist, index }) {
   const followerCount = new Intl.NumberFormat().format(
     artist.data.followers.total
   );
+  const indexInRow = index % 4;
   return (
-    <React.Fragment>
+    <GridInlay left={indexInRow * (180 + 10) + (180 / 2 - 15)}>
       <DisplayFont>{artist.data.name}</DisplayFont>
       <Heading>{followerCount} followers</Heading>
       <BadgeContainer>
@@ -372,7 +386,7 @@ const ArtistDetail: React.SFC<{ artist: ArtistWithTracks }> = function({
           <Badge key={genre}>{genre}</Badge>
         ))}
       </BadgeContainer>
-    </React.Fragment>
+    </GridInlay>
   );
 };
 
@@ -401,9 +415,7 @@ const ArtistGrid: React.SFC<{
         />
       ))}
       {showingDetail && (
-        <GridInlay>
-          <ArtistDetail artist={artists[showDetailFor]} />
-        </GridInlay>
+        <ArtistDetail index={showDetailFor} artist={artists[showDetailFor]} />
       )}
       {artistsAfter.map((artist, i) => (
         <ArtistCard
@@ -426,20 +438,6 @@ const ArtistGrid: React.SFC<{
   );
 };
 
-const DivWithDownArrow = styled.div`
-  &::after {
-    content: "";
-    display: block;
-    position: relative;
-    width: 0;
-    height: 0;
-    left: 75px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid crimson;
-  }
-`;
-
 type ArtistCardProps = {
   artist: ArtistWithTracks;
   includedInPlaylist: boolean;
@@ -454,33 +452,31 @@ const ArtistCard: React.SFC<ArtistCardProps> = function({
 }) {
   const image: Image | null =
     artist.data.images.length > 0 ? artist.data.images[0] : null;
-  const Component = selected ? DivWithDownArrow : "div";
   return (
-    <Component onClick={() => onClick()} title={artist.data.name}>
-      {image !== null ? (
-        <LazyImage
-          width={180}
-          height={180}
-          style={{
-            objectFit: "cover",
-            filter: !includedInPlaylist ? "opacity(33%)" : undefined
-          }}
-          src={image.url}
-          alt=""
-        />
-      ) : (
-        <div
-          style={{
-            background: "#fef",
-            color: "fff",
-            width: 180,
-            height: 180,
-            filter: !includedInPlaylist ? "opacity(33%)" : undefined
-          }}
-        >
-          {artist.data.name}
-        </div>
-      )}
-    </Component>
+    <div onClick={() => onClick()} title={artist.data.name}>
+      <LazyImage
+        width={180}
+        height={180}
+        style={{
+          objectFit: "cover",
+          filter: !includedInPlaylist ? "opacity(33%)" : undefined
+        }}
+        src={image.url}
+        placeholder={
+          <div
+            style={{
+              background: "#fef",
+              color: "fff",
+              width: 180,
+              height: 180,
+              filter: !includedInPlaylist ? "opacity(33%)" : undefined
+            }}
+          >
+            {artist.data.name}
+          </div>
+        }
+        alt=""
+      />
+    </div>
   );
 };

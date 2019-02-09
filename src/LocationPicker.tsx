@@ -45,7 +45,7 @@ const LargeCard = styled(Row)`
   padding: 10px;
   margin: 5px;
   user-select: none;
-  cursor: pointer;
+  cursor: default;
   padding: 25px;
   margin: 0 auto;
 `;
@@ -58,7 +58,14 @@ export const LargeLocation: React.SFC<{
   return (
     <LargeCard>
       {location.image && (
-        <LazyImage width={200} height={200} src={location.image} alt="" />
+        <LazyImage
+          placeholder={null}
+          width={200}
+          height={200}
+          style={{ margin: 25 }}
+          src={location.image}
+          alt=""
+        />
       )}
       <section>
         <Heading>{location.name}</Heading>
