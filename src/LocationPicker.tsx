@@ -2,7 +2,15 @@ import * as React from "react";
 import { Location, getQueryLocationOf } from "./sparql";
 import styled from "styled-components";
 import _get from "lodash-es/get";
-import { Button, Row, Heading, Paragraph } from "./components/Layout";
+import {
+  Button,
+  Row,
+  Heading,
+  Paragraph,
+  Col,
+  LargeButton
+} from "./components/Layout";
+import LazyImage from "./components/LazyImage";
 
 const Input = styled.input`
   padding: 0.25em 1em;
@@ -18,33 +26,51 @@ type State = {
   examples: Location[];
 };
 
-const Card = styled.div`
-  width: 200px;
-  border: 1px solid #633;
-  border-radius: 2px;
+const Card = styled(Col)`
+  align-items: center;
+  background: royalblue;
+  color: white;
+  max-width: 200px;
   padding: 10px;
   margin: 5px;
   user-select: none;
   cursor: pointer;
+`;
 
-  :hover {
-    box-shadow: 0px 0px 3px #633;
-  }
+const LargeCard = styled(Row)`
+  align-items: center;
+  justify-content: space-around;
+  background: royalblue;
+  color: white;
+  padding: 10px;
+  margin: 5px;
+  user-select: none;
+  cursor: pointer;
+  padding: 25px;
+  margin: 0 auto;
 `;
 
 export const LargeLocation: React.SFC<{
   location: Location;
-}> = function({ location }) {
+  onClose: () => void;
+}> = function({ location, onClose }) {
   const excerpt = location.abstract.substr(0, 500);
   return (
-    <section>
-      <Heading>{location.name}</Heading>
-      {location.image && <img src={location.image} alt="" />}
-      <Paragraph>
-        {excerpt}
-        {excerpt.length < location.abstract.length ? "…" : null}
-      </Paragraph>
-    </section>
+    <LargeCard>
+      {location.image && (
+        <LazyImage width={200} height={200} src={location.image} alt="" />
+      )}
+      <section>
+        <Heading>{location.name}</Heading>
+        <Paragraph>
+          {excerpt}
+          {excerpt.length < location.abstract.length ? "…" : null}
+        </Paragraph>
+      </section>
+      <LargeButton style={{ marginLeft: 25 }} onClick={() => onClose()}>
+        &times;
+      </LargeButton>
+    </LargeCard>
   );
 };
 
@@ -67,6 +93,8 @@ export default class LocationPicker extends React.Component<Props, State> {
       {
         name: "Graz",
         uri: "http://dbpedia.org/resource/Graz",
+        image:
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/16-07-06-Rathaus_Graz_Turmblick-RR2_0275.jpg/320px-16-07-06-Rathaus_Graz_Turmblick-RR2_0275.jpg",
         abstract:
           'Graz has a long tradition as a "university town": its six universities have more than 44,000 students. Its "Old Town" is one of the best-preserved city centres in Central Europe.'
       },
@@ -126,6 +154,7 @@ export default class LocationPicker extends React.Component<Props, State> {
             <div>
               <Input
                 type="text"
+                autoFocus
                 value={this.state.input}
                 placeholder="Paste wikipedia page"
                 onChange={this.handleText.bind(this)}

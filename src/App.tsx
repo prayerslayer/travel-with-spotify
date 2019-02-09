@@ -10,10 +10,18 @@ import {
   getTopTracks,
   addTracksToPlaylist
 } from "./api";
-import { Location, getQueryBandsIn } from "./sparql";
-import { Playlist, Artist, Track, Image, User } from "./spotify";
+import { Location, getQueryBandsIn, getBandsFromLocation } from "./sparql";
+import {
+  Playlist,
+  Artist,
+  Track,
+  Image,
+  User,
+  ArtistWithTracks
+} from "./spotify";
 import styled from "styled-components";
-import { Button, Heading } from "./components/Layout";
+import { Button, Heading, CenteredInPage } from "./components/Layout";
+import LazyImage from "./components/LazyImage";
 
 const Grid = styled.section`
   display: grid;
@@ -29,20 +37,16 @@ const GridInlay = styled.section`
   grid-column: 1 / span 4;
   background: crimson;
   color: white;
-  padding: 10px;
+  padding: 10px 0px;
+  margin-top: -10px;
   width: 100%;
   text-align: center;
 `;
 
-type ArtistWithTracks = {
-  data: Artist;
-  tracks: Track[];
-  loadedFromSpotify: boolean;
-};
-
 type State = {
   playlistName: string;
   minPlaylistLengthHours: number;
+  tracksPerArtist: number;
 };
 
 const RootContext = React.createContext({
@@ -92,10 +96,104 @@ export default class Root extends React.Component<{}, RootState> {
   }
 }
 
+type PlaylistCallback<K extends keyof State> = (s: Pick<State, K>) => void;
+const PlaylistControls: React.FunctionComponent<
+  State & {
+    onChange: PlaylistCallback<any>;
+    onCreate: PlaylistCallback<any>;
+  }
+> = function({
+  onChange,
+  onCreate,
+  playlistName,
+  tracksPerArtist,
+  minPlaylistLengthHours
+}) {
+  return (
+    <section>
+      <div>
+        <label htmlFor="playlistname">Playlist Name</label>
+        <input
+          id="playlistname"
+          type="text"
+          value={playlistName}
+          onChange={e => onChange({ playlistName: e.target.value })}
+        />
+      </div>
+      <div>
+        <label htmlFor="playlisttrackperartist">
+          {tracksPerArtist} Tracks per Artist
+        </label>
+        <input
+          type="range"
+          min={1}
+          max={10}
+          step={1}
+          onChange={e => onChange({ tracksPerArtist: +e.target.value })}
+        />
+      </div>
+      <div>
+        <label htmlFor="playlistlength">Desired playlist length (hours)</label>
+        <input
+          id="playlistlength"
+          type="number"
+          min={1}
+          value={minPlaylistLengthHours}
+          onChange={e =>
+            onChange({ minPlaylistLengthHours: Math.max(1, +e.target.value) })
+          }
+        />
+      </div>
+      <div>
+        <Button
+          onClick={() =>
+            onCreate({
+              playlistName,
+              tracksPerArtist,
+              minPlaylistLengthHours
+            })
+          }
+        >
+          Create playlist "{playlistName}"
+        </Button>
+      </div>
+    </section>
+  );
+};
+
+const Progress = function({ percent, hideWhenFinished = true }) {
+  if (percent >= 1 && hideWhenFinished) {
+    return null;
+  }
+  const cutoff = percent * 100;
+  const remaining = (100 - cutoff) / 2; // left and right
+  return (
+    <div
+      style={{
+        height: 25,
+        color: "white",
+        padding: 10,
+        textAlign: "center",
+        marginBottom: 25,
+        backgroundImage: `linear-gradient(
+          to right,
+          transparent 0%,
+          transparent ${remaining}%,
+          crimson ${remaining}%,
+          crimson ${remaining + cutoff}%,
+          transparent ${remaining + cutoff}%)`
+      }}
+    >
+      {Math.floor(cutoff)}%
+    </div>
+  );
+};
+
 class App extends React.Component<RootState, State> {
   state = {
     playlistName: "",
-    minPlaylistLengthHours: 5
+    minPlaylistLengthHours: 5,
+    tracksPerArtist: 10
   };
 
   async loadArtistFromSpotify(band: ArtistWithTracks) {
@@ -143,35 +241,13 @@ class App extends React.Component<RootState, State> {
   }
 
   async handleLocation(location: Location) {
-    const bandQuery = getQueryBandsIn(location.uri);
-    const uri = `https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=${encodeURIComponent(
-      bandQuery
-    )}&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query`;
-    const resp = await fetch(uri);
-    if (resp.ok) {
-      const data = await resp.json();
-      const artists: ArtistWithTracks[] = uniq<Artist>(
-        data.results.bindings.map(b => ({
-          name: b.Name.value,
-          uri: b.Band.value,
-          images: [],
-          genres: [],
-          popularity: 0,
-          followers: { total: 0 }
-        })),
-        band => band.uri
-      ).map((band: Artist) => ({
-        data: band,
-        loadedFromSpotify: false,
-        tracks: [] as Track[]
-      }));
-      this.props.setLocation(location);
-      this.setState({
-        playlistName: location.name
-      });
-      this.props.setArtists(artists);
-      this.startLoadingArtistsFromSpotify();
-    }
+    const artists = await getBandsFromLocation(location);
+    this.props.setLocation(location);
+    this.setState({
+      playlistName: location.name
+    });
+    this.props.setArtists(artists);
+    this.startLoadingArtistsFromSpotify();
   }
 
   partitionArtists: (artistsByPopularity: ArtistWithTracks[]) => number = (
@@ -185,10 +261,9 @@ class App extends React.Component<RootState, State> {
       currentPlaylistLengthSeconds <
         Math.round(this.state.minPlaylistLengthHours * 3600)
     ) {
-      currentPlaylistLengthSeconds += artistsByPopularity[i].tracks.reduce(
-        (s, track) => s + track.duration_ms / 1000,
-        0
-      );
+      currentPlaylistLengthSeconds += artistsByPopularity[i].tracks
+        .slice(0, this.state.tracksPerArtist)
+        .reduce((s, track) => s + track.duration_ms / 1000, 0);
       i++;
     }
     return i - 1;
@@ -196,10 +271,11 @@ class App extends React.Component<RootState, State> {
 
   render() {
     const { artists, location, token } = this.props;
+    const loadedArtists = artists.filter(artist => artist.loadedFromSpotify);
     const artistsByPopularity = sortBy<ArtistWithTracks>(
-      artists.filter(artist => artist.loadedFromSpotify),
+      loadedArtists,
       artist => -artist.data.popularity
-    );
+    ).slice(0, 400);
     const indexOfLastIncludedArtist = this.partitionArtists(
       artistsByPopularity
     );
@@ -221,65 +297,34 @@ class App extends React.Component<RootState, State> {
         />
         {location !== null && (
           <section>
-            <LargeLocation location={location} />
-            <Button
-              onClick={() => {
+            <LargeLocation
+              location={location}
+              onClose={() => {
                 this.props.setLocation(null);
                 this.props.setArtists([]);
                 // TODO cancel ongoing work
               }}
-            >
-              Clear selection
-            </Button>
+            />
           </section>
         )}
         {this.props.location !== null && (
+          <PlaylistControls
+            {...this.state}
+            onChange={s => {
+              this.setState(s);
+            }}
+            onCreate={({ playlistName }) => {
+              this.createPlaylist(
+                playlistName,
+                artistsByPopularity.slice(0, indexOfLastIncludedArtist + 1)
+              );
+            }}
+          />
+        )}
+        {/* artists */}
+        {this.props.location !== null && (
           <React.Fragment>
-            <h2>Artists ({artists.length})</h2>
-            <section>
-              <div>
-                <label htmlFor="playlistname">Playlist Name</label>
-                <input
-                  id="playlistname"
-                  type="text"
-                  value={this.state.playlistName}
-                  onChange={e =>
-                    this.setState({ playlistName: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <label htmlFor="playlistlength">
-                  Desired playlist length (hours)
-                </label>
-                <input
-                  id="playlistlength"
-                  type="number"
-                  min={1}
-                  value={this.state.minPlaylistLengthHours}
-                  onChange={e =>
-                    this.setState({
-                      minPlaylistLengthHours: Math.max(1, +e.target.value)
-                    })
-                  }
-                />
-              </div>
-              <div>
-                <Button
-                  onClick={() =>
-                    this.createPlaylist(
-                      this.state.playlistName,
-                      artistsByPopularity.slice(
-                        0,
-                        indexOfLastIncludedArtist + 1
-                      )
-                    )
-                  }
-                >
-                  Create playlist "{this.state.playlistName}"
-                </Button>
-              </div>
-            </section>
+            <Progress percent={loadedArtists.length / artists.length} />
             <ArtistGrid
               artists={artistsByPopularity}
               indexOfLastIncludedArtist={indexOfLastIncludedArtist}
@@ -349,7 +394,7 @@ const ArtistGrid: React.SFC<{
       {artistsBefore.map((artist, i) => (
         <ArtistCard
           onClick={() => setShowDetailFor(i !== showDetailFor ? i : -1)}
-          key={artist.data.uri}
+          key={i + artist.data.uri}
           selected={showDetailFor === i}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}
@@ -370,7 +415,7 @@ const ArtistGrid: React.SFC<{
             )
           }
           selected={showDetailFor === artistsBefore.length + i}
-          key={artist.data.uri}
+          key={i + artist.data.uri}
           includedInPlaylist={
             artistsBefore.length + i <= indexOfLastIncludedArtist
           }
@@ -380,6 +425,20 @@ const ArtistGrid: React.SFC<{
     </Grid>
   );
 };
+
+const DivWithDownArrow = styled.div`
+  &::after {
+    content: "";
+    display: block;
+    position: relative;
+    width: 0;
+    height: 0;
+    left: 75px;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid crimson;
+  }
+`;
 
 type ArtistCardProps = {
   artist: ArtistWithTracks;
@@ -393,25 +452,20 @@ const ArtistCard: React.SFC<ArtistCardProps> = function({
   selected,
   includedInPlaylist
 }) {
-  const image: string | null =
-    artist.data.images.length > 0 ? artist.data.images[0].url : null;
+  const image: Image | null =
+    artist.data.images.length > 0 ? artist.data.images[0] : null;
+  const Component = selected ? DivWithDownArrow : "div";
   return (
-    <div
-      onClick={() => onClick()}
-      title={artist.data.name}
-      style={{
-        outline: selected ? "10px solid crimson" : undefined
-      }}
-    >
+    <Component onClick={() => onClick()} title={artist.data.name}>
       {image !== null ? (
-        <img
+        <LazyImage
+          width={180}
+          height={180}
           style={{
             objectFit: "cover",
-            width: 180,
-            height: 180,
             filter: !includedInPlaylist ? "opacity(33%)" : undefined
           }}
-          src={image}
+          src={image.url}
           alt=""
         />
       ) : (
@@ -427,6 +481,6 @@ const ArtistCard: React.SFC<ArtistCardProps> = function({
           {artist.data.name}
         </div>
       )}
-    </div>
+    </Component>
   );
 };

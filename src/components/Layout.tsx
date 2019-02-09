@@ -16,17 +16,21 @@ export const Row = styled.section`
   flex-direction: row;
 `;
 
+export const Col = styled.section`
+  display: flex;
+  flex-direction: column;
+`;
+
 export const Button = styled.button`
-  background: transparent;
-  border: 2px solid lightcoral;
+  background: inherit;
+  border: 2px solid black;
   cursor: pointer;
-  color: lightcoral;
-  margin: 0 1em;
+  color: black;
   padding: 0.25em 1em;
 
   :hover {
-    border-color: crimson;
-    color: crimson;
+    color: whitesmoke;
+    border-color: whitesmoke;
   }
 `;
 
@@ -43,4 +47,9 @@ export const Heading = styled.h3`
 export const Paragraph = styled.p`
   max-width: 600px;
   margin-top: 0;
+  margin-bottom: 0;
+
+  + p {
+    margin-top: 10px;
+  }
 `;

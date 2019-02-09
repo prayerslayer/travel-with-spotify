@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@babel/polyfill": "^7.2.5",
+    "@researchgate/react-intersection-observer": "^0.7.4",
+    "intersection-observer": "^0.5.1",
     "oauth2-client-js": "0.0.15",
     "react": "^16.8.1",
     "react-dom": "^16.8.1",

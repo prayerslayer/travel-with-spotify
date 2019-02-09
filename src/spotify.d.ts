@@ -57,6 +57,12 @@ export type Artist = {
   followers: { total: number };
 };
 
+export type ArtistWithTracks = {
+  data: Artist;
+  tracks: Track[];
+  loadedFromSpotify: boolean;
+};
+
 // album: {album_type: "album",…}
 // artists: [{external_urls: {spotify: "https://open.spotify.com/artist/3pxUWacRT5JtY6FwvwaylQ"},…}]
 // disc_number: 1

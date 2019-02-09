@@ -1,3 +1,6 @@
+import uniq from "lodash-es/uniqBy";
+import { Artist, Track, ArtistWithTracks } from "./spotify";
+
 export type Location = {
   uri: string;
   name: string;
@@ -68,4 +71,44 @@ export function getQueryBandsIn(locationURI: string) {
     ?p2bp2 dbo:isPartOf <${locationURI}>
   }
 }`;
+}
+
+type ResultVariable = {
+  type: "uri" | "literal";
+  value: string;
+};
+type BandBinding = {
+  Band: ResultVariable;
+  Name: ResultVariable;
+};
+export async function getBandsFromLocation(location: Location) {
+  const bandQuery = getQueryBandsIn(location.uri);
+  const uri = `https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=${encodeURIComponent(
+    bandQuery
+  )}&format=application%2Fsparql-results%2Bjson&CXML_redir_for_subjs=121&CXML_redir_for_hrefs=&timeout=30000&debug=on&run=+Run+Query`;
+  const resp = await fetch(uri);
+  const data = await resp.json();
+  const bindingToArtists: Artist[] = (data.results.bindings as BandBinding[])
+    .filter(
+      // Weirdly, the "List of KMFDM members" page shares a lot of the data with the KMFDM page
+      // So we filter this out because what the fuck
+      b => !b.Band.value.startsWith("http://dbpedia.org/resource/List_of_")
+    )
+    .map(b => ({
+      name: b.Name.value,
+      uri: b.Band.value,
+      type: "artist" as "artist",
+      id: b.Band.value,
+      images: [],
+      genres: [],
+      popularity: 0,
+      followers: { total: 0 }
+    }));
+  return uniq<Artist>(bindingToArtists, artist => artist.uri).map(
+    (artist: Artist) => ({
+      data: artist,
+      loadedFromSpotify: false,
+      tracks: [] as Track[]
+    })
+  );
 }
