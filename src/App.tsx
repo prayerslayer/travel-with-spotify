@@ -1,7 +1,5 @@
 import * as React from "react";
-import LocationPicker, { LocationCard, LargeLocation } from "./LocationPicker";
-import uniq from "lodash-es/uniqBy";
-import partition from "lodash-es/partition";
+import LocationPicker from "./LocationPicker";
 import sortBy from "lodash-es/sortBy";
 import Login from "./components/Login";
 import {
@@ -11,16 +9,9 @@ import {
   addTracksToPlaylist
 } from "./api";
 import { Location, getQueryBandsIn, getBandsFromLocation } from "./sparql";
-import {
-  Playlist,
-  Artist,
-  Track,
-  Image,
-  User,
-  ArtistWithTracks
-} from "./spotify";
+import { Track, Image, User, ArtistWithTracks } from "./spotify";
 import styled from "styled-components";
-import { Button, Heading, LargeInput, MediumButton } from "./components/Layout";
+import { Heading, LargeInput, MediumButton } from "./components/Layout";
 import LazyImage from "./components/LazyImage";
 
 const Grid = styled.section`
@@ -109,19 +100,21 @@ export default class Root extends React.Component<{}, RootState> {
 }
 
 const PlaylistControlTable = styled.table`
-  margin: 25px auto;
+  margin: 10px auto;
   padding: 25px;
   color: white;
-  background: forestgreen;
+  background: royalblue;
 `;
 type PlaylistCallback<K extends keyof State> = (s: Pick<State, K>) => void;
 const PlaylistControls: React.FunctionComponent<
   State & {
     onChange: PlaylistCallback<any>;
     onCreate: PlaylistCallback<any>;
+    onClear: () => void;
   }
 > = function({
   onChange,
+  onClear,
   onCreate,
   playlistName,
   tracksPerArtist,
@@ -180,7 +173,15 @@ const PlaylistControls: React.FunctionComponent<
           </td>
         </tr>
         <tr>
-          <td />
+          <td>
+            <MediumButton
+              onClick={() => {
+                onClear();
+              }}
+            >
+              Clear selection
+            </MediumButton>
+          </td>
           <td>
             <MediumButton
               onClick={() =>
@@ -336,27 +337,22 @@ class App extends React.Component<RootState, State> {
     }
     return (
       <div>
-        <LocationPicker
-          selectedLocation={location}
-          onSelect={this.handleLocation.bind(this)}
-        />
-        {location !== null && (
-          <section>
-            <LargeLocation
-              location={location}
-              onClose={() => {
-                this.props.setLocation(null);
-                this.props.setArtists([]);
-                // TODO cancel ongoing work
-              }}
-            />
-          </section>
+        {location === null && (
+          <LocationPicker
+            selectedLocation={location}
+            onSelect={this.handleLocation.bind(this)}
+          />
         )}
         {this.props.location !== null && (
           <PlaylistControls
             {...this.state}
             onChange={s => {
               this.setState(s);
+            }}
+            onClear={() => {
+              this.props.setLocation(null);
+              this.props.setArtists([]);
+              // TODO cancel ongoing work
             }}
             onCreate={({ playlistName, tracksPerArtist }) => {
               this.createPlaylist(

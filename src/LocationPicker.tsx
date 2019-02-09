@@ -3,20 +3,13 @@ import { Location, getQueryLocationOf } from "./sparql";
 import styled from "styled-components";
 import _get from "lodash-es/get";
 import {
-  Button,
   Row,
   Heading,
   Paragraph,
   Col,
-  LargeButton,
   LargeInput,
   MediumButton
 } from "./components/Layout";
-import LazyImage from "./components/LazyImage";
-
-const Input = styled.input`
-  padding: 0.25em 1em;
-`;
 
 type Props = {
   onSelect: (l: Location) => void;
@@ -38,33 +31,6 @@ const Card = styled(Col)`
   user-select: none;
   cursor: pointer;
 `;
-
-const LargeCard = styled(Row)`
-  align-items: center;
-  justify-content: space-between;
-  background: royalblue;
-  color: white;
-  padding: 10px;
-  margin: 5px;
-  user-select: none;
-  cursor: default;
-  padding: 25px;
-  margin: 0 auto;
-`;
-
-export const LargeLocation: React.SFC<{
-  location: Location;
-  onClose: () => void;
-}> = function({ location, onClose }) {
-  const excerpt = location.abstract.substr(0, 500);
-  return (
-    <LargeCard>
-      <div />
-      <Heading>{location.name}</Heading>
-      <LargeButton onClick={() => onClose()}>&times;</LargeButton>
-    </LargeCard>
-  );
-};
 
 export const LocationCard: React.SFC<{
   location: Location;
