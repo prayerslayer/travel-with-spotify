@@ -44,7 +44,7 @@ export const LocationCard: React.SFC<{
   );
 };
 
-const EXAMPLES = [
+const EXAMPLES = shuffle([
   {
     name: "Berlin",
     uri: "http://dbpedia.org/resource/Berlin"
@@ -106,12 +106,12 @@ const EXAMPLES = [
     name: "Austin",
     uri: "http://dbpedia.org/page/Austin,_Texas"
   }
-];
+]);
 
 export default class LocationPicker extends React.Component<Props, State> {
   state = {
     input: "",
-    examples: shuffle(EXAMPLES)
+    examples: EXAMPLES
   };
 
   handleText = e => {
@@ -156,7 +156,7 @@ export default class LocationPicker extends React.Component<Props, State> {
                     type="text"
                     autoFocus
                     value={this.state.input}
-                    placeholder="Paste wikipedia page"
+                    placeholder="Paste page from en.wikipedia.org"
                     onChange={this.handleText}
                     onKeyUp={this.handleKey}
                   />
