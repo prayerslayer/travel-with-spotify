@@ -7,7 +7,14 @@ import chunk from "lodash-es/chunk";
 import { Location, getBandsFromLocation } from "./sparql";
 import { Track, ArtistImage, User, ArtistWithTracks } from "./spotify";
 import styled from "styled-components";
-import { Heading, LargeInput, MediumButton, Alert } from "./components/Layout";
+import {
+  Heading,
+  LargeInput,
+  MediumButton,
+  Alert,
+  Button,
+  Col
+} from "./components/Layout";
 import LazyImage from "./components/LazyImage";
 import ArtistGrid from "./components/ArtistGrid";
 import PlaylistControls from "./components/PlaylistControls";
@@ -162,6 +169,16 @@ export default class App extends React.Component<{}, State> {
     );
   };
 
+  stopWorkers = () => {
+    for (const worker of this.state.workers) {
+      worker.terminate();
+    }
+    this.setState(state => ({
+      workers: [],
+      fetchedArtistCount: state.artistNames.length
+    }));
+  };
+
   partitionArtists: (artistsByPopularity: ArtistWithTracks[]) => number = (
     artistsByPopularity: ArtistWithTracks[]
   ) => {
@@ -218,9 +235,7 @@ export default class App extends React.Component<{}, State> {
                 this.setState(s);
               }}
               onClear={() => {
-                for (const worker of this.state.workers) {
-                  worker.terminate();
-                }
+                this.stopWorkers();
                 this.setState({
                   ...INITIAL_STATE,
                   artists: [], // why?
@@ -243,6 +258,15 @@ export default class App extends React.Component<{}, State> {
                   : `Playlist ${this.state.playlistName} created!`}
               </Alert>
             )}
+            {processedArtists < artistNames.length &&
+              this.state.workers.length > 0 && (
+                <MediumButton
+                  style={{ margin: "10px auto", display: "block" }}
+                  onClick={this.stopWorkers}
+                >
+                  Stop loading
+                </MediumButton>
+              )}
             <Progress percent={processedArtists / artistNames.length} />
             <ArtistGrid
               artists={artists}
