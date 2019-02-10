@@ -35,7 +35,16 @@ export const Button = styled.button`
   }
 `;
 
+export const PrimaryButton = styled(Button)`
+  background: black;
+  color: white;
+`;
+
 export const MediumButton = styled(Button)`
+  font-size: 1.25rem;
+`;
+
+export const MediumPrimaryButton = styled(PrimaryButton)`
   font-size: 1.25rem;
 `;
 
@@ -43,10 +52,14 @@ export const LargeButton = styled(Button)`
   font-size: 2rem;
 `;
 
-export const Heading = styled.h3`
+export const H3 = styled.h3`
   margin-top: 0;
-  margin-bottom: 25px;
+  margin-bottom: 0;
   font-size: 1.25rem;
+`;
+
+export const Heading = styled.h3`
+  margin-bottom: 25px;
 `;
 
 export const Paragraph = styled.p`
@@ -59,8 +72,18 @@ export const Paragraph = styled.p`
   }
 `;
 
-const SingleParagraph = styled(Paragraph)`
-  margin-bottom: 10px;
+export const Grid = styled.section`
+  display: grid;
+  grid-template-columns: repeat(4, 180px);
+  grid-gap: 10px 10px;
+  justify-items: center;
+  justify-content: center;
+  align-items: start;
+  align-content: center;
+`;
+
+export const SpanningRow = styled.section`
+  grid-column: 1 / span 4;
 `;
 
 export const LargeInput = styled.input`

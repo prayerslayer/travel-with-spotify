@@ -4,22 +4,15 @@ import { Artist, Track, ArtistWithTracks } from "./spotify";
 export type Location = {
   uri: string;
   name: string;
-  abstract: string;
-  image?: string;
 };
 
 export function getQueryLocationOf(wikipage: string) {
-  return `SELECT DISTINCT ?Location, ?Name, ?Abstract, ?Image WHERE {
+  return `SELECT DISTINCT ?Location, ?Name WHERE {
     ?Location foaf:isPrimaryTopicOf <${wikipage}> .
-    ?Location dbo:abstract ?Abstract .
     OPTIONAL {
       ?Location foaf:name ?Name .
       FILTER langMatches ( lang(?Name), "EN" )
     }
-    OPTIONAL {
-      ?Location dbo:thumbnail ?Image
-    }
-    FILTER langMatches( lang(?Abstract), "EN" )
   }
   LIMIT 1`;
 }

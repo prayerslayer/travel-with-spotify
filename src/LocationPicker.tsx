@@ -4,11 +4,13 @@ import styled from "styled-components";
 import _get from "lodash-es/get";
 import {
   Row,
-  Heading,
+  H3,
   Paragraph,
   Col,
   LargeInput,
-  MediumButton
+  MediumPrimaryButton,
+  Grid,
+  SpanningRow
 } from "./components/Layout";
 
 type Props = {
@@ -21,15 +23,15 @@ type State = {
   examples: Location[];
 };
 
-const Card = styled(Col)`
-  align-items: center;
+const Card = styled.div`
   background: royalblue;
   color: white;
-  max-width: 200px;
-  padding: 10px;
-  margin: 5px;
-  user-select: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 180px;
+  height: 180px;
 `;
 
 export const LocationCard: React.SFC<{
@@ -38,8 +40,7 @@ export const LocationCard: React.SFC<{
 }> = function({ location, onClick }) {
   return (
     <Card role="button" onClick={() => onClick(location.uri)}>
-      <Heading>{location.name}</Heading>
-      <Paragraph>{location.abstract}</Paragraph>
+      <H3>{location.name}</H3>
     </Card>
   );
 };
@@ -50,46 +51,36 @@ export default class LocationPicker extends React.Component<Props, State> {
     examples: [
       {
         name: "Graz",
-        uri: "http://dbpedia.org/resource/Graz",
-        image:
-          "https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/16-07-06-Rathaus_Graz_Turmblick-RR2_0275.jpg/320px-16-07-06-Rathaus_Graz_Turmblick-RR2_0275.jpg",
-        abstract:
-          'Graz has a long tradition as a "university town": its six universities have more than 44,000 students. Its "Old Town" is one of the best-preserved city centres in Central Europe.'
+        uri: "http://dbpedia.org/resource/Graz"
       },
       {
         name: "Vienna",
-        uri: "http://dbpedia.org/resource/Vienna",
-        abstract:
-          "Vienna is the capital and largest city of Austria and one of the nine states of Austria. Vienna is Austria’s primary city, with a population of about 1.8 million, and its cultural, economic, and political centre."
+        uri: "http://dbpedia.org/resource/Vienna"
       },
       {
         name: "Finland",
-        uri: "http://dbpedia.org/resource/Finland",
-        abstract:
-          "Finland is situated in the geographical region of Fennoscandia, which also includes Scandinavia. The majority of the population is concentrated in the southern region."
+        uri: "http://dbpedia.org/resource/Finland"
       },
       {
         name: "Japan",
-        uri: "http://dbpedia.org/resource/Japan",
-        abstract:
-          'Japan is an island country in East Asia. The kanji that make up Japan’s name mean "sun origin", and it is often called the "Land of the Rising Sun".'
+        uri: "http://dbpedia.org/resource/Japan"
       }
     ]
   };
 
-  handleText(e) {
+  handleText = e => {
     this.setState({
       input: e.target.value
     });
-  }
+  };
 
-  handleKey(e: React.KeyboardEvent) {
+  handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       this.fetchLocation();
     }
-  }
+  };
 
-  async fetchLocation() {
+  fetchLocation = async () => {
     const text = this.state.input.replace("https://", "http://");
     const uri = `https://dbpedia.org/sparql?default-graph-uri=http%3A%2F%2Fdbpedia.org&query=${encodeURIComponent(
       getQueryLocationOf(text)
@@ -99,36 +90,36 @@ export default class LocationPicker extends React.Component<Props, State> {
     if (resp.ok) {
       const data = (await resp.json()).results.bindings.map(b => ({
         uri: b.Location.value,
-        name: _get(b, "Name.value", fallbackText),
-        abstract: b.Abstract.value,
-        image: _get(b, "Image.value")
+        name: _get(b, "Name.value", fallbackText)
       }));
       if (data.length > 0) {
         this.props.onSelect(data[0]);
       }
     }
-  }
+  };
 
   render() {
     return (
       <section>
         {this.props.selectedLocation === null && (
           <React.Fragment>
-            <Row>
-              <LargeInput
-                type="text"
-                autoFocus
-                value={this.state.input}
-                placeholder="Paste wikipedia page"
-                onChange={this.handleText.bind(this)}
-                onKeyUp={this.handleKey.bind(this)}
-              />
+            <Grid>
+              <SpanningRow style={{ width: 4 * 180, marginBottom: 25 }}>
+                <Row>
+                  <LargeInput
+                    type="text"
+                    autoFocus
+                    value={this.state.input}
+                    placeholder="Paste wikipedia page"
+                    onChange={this.handleText}
+                    onKeyUp={this.handleKey}
+                  />
 
-              <MediumButton onClick={this.fetchLocation.bind(this)}>
-                Start
-              </MediumButton>
-            </Row>
-            <Row>
+                  <MediumPrimaryButton onClick={this.fetchLocation}>
+                    Start
+                  </MediumPrimaryButton>
+                </Row>
+              </SpanningRow>
               {this.state.examples.map(location => (
                 <LocationCard
                   key={location.uri}
@@ -136,7 +127,7 @@ export default class LocationPicker extends React.Component<Props, State> {
                   location={location}
                 />
               ))}
-            </Row>
+            </Grid>
           </React.Fragment>
         )}
       </section>

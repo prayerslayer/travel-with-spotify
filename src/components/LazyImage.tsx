@@ -97,13 +97,12 @@ export default class LazyImage extends React.Component<Props, State> {
           {
             [ImageFetchState.initial]: (
               <IntersectionObserver
-                rootMargin={`${180 * 2}px`}
+                rootMargin={`180px`}
                 onChange={this.handleIntersection}
               >
                 <LoadingImagePlaceholder
                   width={this.props.width}
                   height={this.props.height}
-                  onClick={onClick}
                 />
               </IntersectionObserver>
             ),
@@ -111,7 +110,6 @@ export default class LazyImage extends React.Component<Props, State> {
               <LoadingImagePlaceholder
                 width={this.props.width}
                 height={this.props.height}
-                onClick={onClick}
               />
             ),
             [ImageFetchState.failed]: (

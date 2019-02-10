@@ -1,6 +1,6 @@
 import * as React from "react";
 import styled from "styled-components";
-import { LargeInput, MediumButton } from "./Layout";
+import { LargeInput, MediumButton, MediumPrimaryButton } from "./Layout";
 
 const PlaylistControlTable = styled.table`
   margin: 10px auto;
@@ -85,13 +85,13 @@ const PlaylistControls: React.FunctionComponent<Props> = function({
                 onClear();
               }}
             >
-              Clear selection
+              Close
             </MediumButton>
           </td>
           <td>
-            <MediumButton onClick={() => onCreate()}>
+            <MediumPrimaryButton onClick={() => onCreate()}>
               Create playlist
-            </MediumButton>
+            </MediumPrimaryButton>
           </td>
         </tr>
       </tbody>

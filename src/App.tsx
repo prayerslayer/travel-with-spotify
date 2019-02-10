@@ -135,7 +135,7 @@ export default class App extends React.Component<{}, State> {
   };
 
   startLoadingArtistsFromSpotify = async () => {
-    const chunks = chunk(this.state.artistNames, 500);
+    const chunks = chunk(this.state.artistNames, 250);
     console.log("Starting", chunks.length, "workers");
     for (const artistChunk of chunks) {
       const worker = new Worker("./worker.ts");

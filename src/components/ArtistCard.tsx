@@ -6,8 +6,8 @@ import styled from "styled-components";
 const ArtistCardNoImage = styled.div`
   background: crimson;
   color: #fff;
-  alignitems: center;
-  justifycontent: center;
+  align-items: center;
+  justify-content: center;
   display: flex;
   cursor: pointer;
   width: 180;
