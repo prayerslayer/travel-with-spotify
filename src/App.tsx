@@ -1,21 +1,11 @@
 import * as React from "react";
 import LocationPicker from "./LocationPicker";
-import sortBy from "lodash-es/sortBy";
 import Login from "./components/Login";
 import { getOrCreatePlaylist, addTracksToPlaylist } from "./api";
 import chunk from "lodash-es/chunk";
 import { Location, getBandsFromLocation } from "./sparql";
-import { Track, ArtistImage, User, ArtistWithTracks } from "./spotify";
-import styled from "styled-components";
-import {
-  Heading,
-  LargeInput,
-  MediumButton,
-  Alert,
-  Button,
-  Col
-} from "./components/Layout";
-import LazyImage from "./components/LazyImage";
+import { Track, User, ArtistWithTracks } from "./spotify";
+import { MediumButton, Alert } from "./components/Layout";
 import ArtistGrid from "./components/ArtistGrid";
 import PlaylistControls from "./components/PlaylistControls";
 

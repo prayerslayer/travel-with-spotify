@@ -2,11 +2,10 @@ import * as React from "react";
 import { Location, getQueryLocationOf } from "./sparql";
 import styled from "styled-components";
 import _get from "lodash-es/get";
+import shuffle from "lodash-es/shuffle";
 import {
   Row,
   H3,
-  Paragraph,
-  Col,
   LargeInput,
   MediumPrimaryButton,
   Grid,
@@ -45,27 +44,74 @@ export const LocationCard: React.SFC<{
   );
 };
 
+const EXAMPLES = [
+  {
+    name: "Berlin",
+    uri: "http://dbpedia.org/resource/Berlin"
+  },
+  {
+    name: "Vienna",
+    uri: "http://dbpedia.org/resource/Vienna"
+  },
+  {
+    name: "Helsinki",
+    uri: "http://dbpedia.org/resource/Helsinki"
+  },
+  {
+    name: "San Francisco",
+    uri: "http://dbpedia.org/resource/San_Francisco"
+  },
+  {
+    name: "New York City",
+    uri: "http://dbpedia.org/resource/New_York_City"
+  },
+  { name: "Tokyo", uri: "http://dbpedia.org/resource/Tokyo" },
+  {
+    name: "Miami",
+    uri: "http://dbpedia.org/resource/Miami"
+  },
+  {
+    name: "Manchester",
+    uri: "http://dbpedia.org/resource/Manchester"
+  },
+  {
+    name: "Leeds",
+    uri: "http://dbpedia.org/resource/Leeds"
+  },
+  {
+    name: "Paris",
+    uri: "http://dbpedia.org/resource/Paris"
+  },
+  {
+    name: "Madrid",
+    uri: "http://dbpedia.org/resource/Madrid"
+  },
+  {
+    name: "Rome",
+    uri: "http://dbpedia.org/resource/Rome"
+  },
+  {
+    name: "Istanbul",
+    uri: "http://dbpedia.org/resource/Istanbul"
+  },
+  {
+    name: "Nashville",
+    uri: "http://dbpedia.org/resource/Nashville,_Tennessee"
+  },
+  {
+    name: "Chicago",
+    uri: "http://dbpedia.org/resource/Chicago"
+  },
+  {
+    name: "Austin",
+    uri: "http://dbpedia.org/page/Austin,_Texas"
+  }
+];
+
 export default class LocationPicker extends React.Component<Props, State> {
   state = {
     input: "",
-    examples: [
-      {
-        name: "Graz",
-        uri: "http://dbpedia.org/resource/Graz"
-      },
-      {
-        name: "Vienna",
-        uri: "http://dbpedia.org/resource/Vienna"
-      },
-      {
-        name: "Finland",
-        uri: "http://dbpedia.org/resource/Finland"
-      },
-      {
-        name: "Japan",
-        uri: "http://dbpedia.org/resource/Japan"
-      }
-    ]
+    examples: shuffle(EXAMPLES)
   };
 
   handleText = e => {

@@ -1,6 +1,6 @@
 import "@babel/polyfill";
-import { findArtist, getTopTracks, APIError, withRetry } from "./api";
-import { ArtistWithTracks, Track } from "./spotify";
+import { findArtist, getTopTracks, withRetry } from "./api";
+import { ArtistWithTracks } from "./spotify";
 
 const retryingFindArtist = withRetry(findArtist);
 const retryingGetTopTracks = withRetry(getTopTracks);

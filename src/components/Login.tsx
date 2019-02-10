@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Provider, Request } from "oauth2-client-js";
-import { getMe, loggedIn } from "../api";
+import { getMe } from "../api";
 import { User } from "../spotify";
 import { CenteredInPage, LargeButton } from "./Layout";
 
