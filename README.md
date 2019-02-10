@@ -2,7 +2,7 @@
 
 Takes a Wikipedia page of a place. Creates a Spotify playlist from artists with a connection to that place. If a playlist with the desired name already exists, they will be added to that one.
 
-![](2019-02-10-23-37-59.png)
+![](2019-02-10-23-40-13.png)
 
 ## TODO, if I'm super bored
 
