@@ -24,6 +24,9 @@ export function getQueryLocationOf(wikipage: string) {
   LIMIT 1`;
 }
 
+// TODO also check for dbo:country
+// Behemoth is not in Poland list because Gdansk has no isPartOf relationship up to Poland
+// And what about dbo:part
 export function getQueryBandsIn(locationURI: string) {
   return `SELECT ?Band, ?Name WHERE {
   # hometown
