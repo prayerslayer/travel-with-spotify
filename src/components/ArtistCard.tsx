@@ -1,6 +1,18 @@
 import * as React from "react";
 import { ArtistWithTracks, Image } from "../spotify";
 import LazyImage from "./LazyImage";
+import styled from "styled-components";
+
+const ArtistCardNoImage = styled.div`
+  background: crimson;
+  color: #fff;
+  alignitems: center;
+  justifycontent: center;
+  display: flex;
+  cursor: pointer;
+  width: 180;
+  height: 180;
+`;
 
 type ArtistCardProps = {
   artist: ArtistWithTracks;
@@ -21,24 +33,19 @@ const ArtistCard: React.FunctionComponent<ArtistCardProps> = function({
       onClick={() => onClick()}
       style={{
         objectFit: "cover",
+        cursor: "pointer",
         filter: !includedInPlaylist ? "opacity(33%)" : undefined
       }}
       src={image && image.url}
       fallback={
-        <div
+        <ArtistCardNoImage
+          onClick={() => onClick()}
           style={{
-            background: "crimson",
-            alignItems: "center",
-            justifyContent: "center",
-            display: "flex",
-            color: "fff",
-            width: 180,
-            height: 180,
             filter: !includedInPlaylist ? "opacity(33%)" : undefined
           }}
         >
           {artist.artist.name}
-        </div>
+        </ArtistCardNoImage>
       }
       alt=""
     />

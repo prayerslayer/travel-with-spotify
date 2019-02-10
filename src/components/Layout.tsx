@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import * as React from "react";
 
 export const Page = styled.section`
   width: 100vw;
@@ -58,8 +59,42 @@ export const Paragraph = styled.p`
   }
 `;
 
+const SingleParagraph = styled(Paragraph)`
+  margin-bottom: 10px;
+`;
+
 export const LargeInput = styled.input`
   font-size: 1.25rem;
   width: 100%;
   margin: 5px;
 `;
+
+const OkayMessage = styled.p`
+  background: forestgreen;
+  color: white;
+  padding: 25px;
+  text-align: center;
+  margin-bottom: 10px;
+`;
+
+const ErrorMessage = styled(OkayMessage)`
+  color: black;
+  background: yellow;
+`;
+
+export const Alert: React.FunctionComponent<{
+  dismissable?: boolean;
+  type?: "success" | "error";
+}> = function({ dismissable = false, children, type }) {
+  const [show, toggle] = React.useState(true);
+  if (dismissable && !show) {
+    return null;
+  }
+  const Component = type === "success" ? OkayMessage : ErrorMessage;
+  return (
+    <div>
+      <Component>{children}</Component>
+      {dismissable && <Button onClick={() => toggle(false)}>Okay</Button>}
+    </div>
+  );
+};

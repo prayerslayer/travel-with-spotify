@@ -7,7 +7,7 @@ import chunk from "lodash-es/chunk";
 import { Location, getBandsFromLocation } from "./sparql";
 import { Track, Image, User, ArtistWithTracks } from "./spotify";
 import styled from "styled-components";
-import { Heading, LargeInput, MediumButton } from "./components/Layout";
+import { Heading, LargeInput, MediumButton, Alert } from "./components/Layout";
 import LazyImage from "./components/LazyImage";
 import ArtistGrid from "./components/ArtistGrid";
 import PlaylistControls from "./components/PlaylistControls";
@@ -18,6 +18,7 @@ type State = {
   tracksPerArtist: number;
   workers: Worker[];
   location: Location | null;
+  playlistCreated: boolean | string;
 
   artistNames: ArtistWithTracks[];
   fetchedArtistCount: number;
@@ -64,7 +65,8 @@ const INITIAL_STATE: State = {
   token: null,
   location: null,
   me: null,
-  workers: []
+  workers: [],
+  playlistCreated: false
 };
 
 const hasIdleCallback =
@@ -111,16 +113,25 @@ export default class App extends React.Component<{}, State> {
     artists: ArtistWithTracks[],
     tracksPerArtist: number
   ) => {
-    const playlist = await getOrCreatePlaylist(this.state.me, name, {
-      token: this.state.token
-    });
-    const tracks: Track[] = [];
-    for (const artist of artists) {
-      tracks.push(...artist.tracks.slice(0, tracksPerArtist));
+    try {
+      const playlist = await getOrCreatePlaylist(this.state.me, name, {
+        token: this.state.token
+      });
+      const tracks: Track[] = [];
+      for (const artist of artists) {
+        tracks.push(...artist.tracks.slice(0, tracksPerArtist));
+      }
+      await addTracksToPlaylist(playlist, tracks, {
+        token: this.state.token
+      });
+      this.setState({
+        playlistCreated: true
+      });
+    } catch (e) {
+      this.setState({
+        playlistCreated: e.message
+      });
     }
-    await addTracksToPlaylist(playlist, tracks, {
-      token: this.state.token
-    });
   };
 
   startLoadingArtistsFromSpotify = async () => {
@@ -225,7 +236,13 @@ export default class App extends React.Component<{}, State> {
                 );
               }}
             />
-
+            {this.state.playlistCreated && (
+              <Alert>
+                {typeof this.state.playlistCreated === "string"
+                  ? `Error: ${this.state.playlistCreated}`
+                  : `Playlist ${this.state.playlistName} created!`}
+              </Alert>
+            )}
             <Progress percent={processedArtists / artistNames.length} />
             <ArtistGrid
               artists={artists}
