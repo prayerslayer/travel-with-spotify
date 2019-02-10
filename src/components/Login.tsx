@@ -32,7 +32,10 @@ export default class Login extends React.Component<LoginProps> {
     });
     const request = new Request({
       client_id: "96116ce1fa57471ba2edf02d66c6f6c4",
-      redirect_uri: "http://localhost:1234",
+      redirect_uri:
+        process.env.NODE_ENV === "production"
+          ? "https://prayerslayer.github.io/travel-with-spotify/"
+          : "http://localhost:1234",
       scope: ["playlist-modify-public"]
     });
 
