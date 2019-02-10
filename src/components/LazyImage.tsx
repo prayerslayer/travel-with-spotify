@@ -87,7 +87,6 @@ export default class LazyImage extends React.Component<Props, State> {
   };
 
   render() {
-    const { src, onClick } = this.props;
     if (!this.props.src) {
       return this.props.fallback;
     }

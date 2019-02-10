@@ -92,7 +92,6 @@ export async function getBandsFromLocation(location: Location) {
     )
     .map(b => ({
       name: b.Name.value,
-      uri: b.Band.value,
       type: "artist" as "artist",
       id: b.Band.value,
       images: [],
@@ -100,7 +99,7 @@ export async function getBandsFromLocation(location: Location) {
       popularity: 0,
       followers: { total: 0 }
     }));
-  return uniq<Artist>(bindingToArtists, artist => artist.uri).map(
+  return uniq<Artist>(bindingToArtists, artist => artist.id).map(
     (artist: Artist) => ({
       artist,
       tracks: [] as Track[]

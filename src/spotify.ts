@@ -1,3 +1,4 @@
+import pick from "lodash-es/pick";
 // collaborative: false
 // external_urls: {spotify: "https://open.spotify.com/playlist/0D8qFlbBxbJcEYzYD2Fhd5"}
 // href: "https://api.spotify.com/v1/playlists/0D8qFlbBxbJcEYzYD2Fhd5"
@@ -12,7 +13,13 @@
 // type: "playlist"
 // uri: "spotify:user:prayerslaye
 
-export type Playlist = {};
+export type Playlist = {
+  id: string;
+};
+
+export function coercePlaylist(playlist: Playlist): Playlist {
+  return pick<Playlist, keyof Playlist>(playlist, ["id"]);
+}
 
 // display_name: "prayerslayer"
 // external_urls: {spotify: "https://open.spotify.com/user/prayerslayer"}
@@ -25,11 +32,13 @@ export type Playlist = {};
 
 export type User = {
   id: string;
-  type: "user";
-  uri: string;
 };
 
-type Image = {
+export function coerceUser(user: User): User {
+  return pick<User, keyof User>(user, ["id"]);
+}
+
+export type ArtistImage = {
   width: number;
   height: number;
   url: string;
@@ -48,14 +57,25 @@ type Image = {
 
 export type Artist = {
   name: string;
-  type: "artist";
-  uri: string;
   id: string;
   genres: string[];
-  images: Image[];
+  images: ArtistImage[];
   popularity: number;
   followers: { total: number };
 };
+
+export function coerceArtist(artist: Artist): Artist {
+  const picked = pick<Artist, keyof Artist>(artist, [
+    "id",
+    "name",
+    "genres",
+    "images",
+    "popularity",
+    "followers"
+  ]);
+  picked.images = [picked.images[0]];
+  return picked;
+}
 
 export type ArtistWithTracks = {
   artist: Artist;
@@ -82,11 +102,12 @@ export type ArtistWithTracks = {
 
 export type Track = {
   uri: string;
-  type: "track";
-  id: string;
-  name: string;
   duration_ms: number;
 };
+
+export function coerceTrack(track: Track): Track {
+  return pick<Track, keyof Track>(track, ["duration_ms", "uri"]);
+}
 
 export type PagedResult<Content> = {
   href: string;

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ArtistWithTracks, Image } from "../spotify";
+import { ArtistWithTracks, ArtistImage } from "../spotify";
 import LazyImage from "./LazyImage";
 import styled from "styled-components";
 
@@ -24,7 +24,7 @@ const ArtistCard: React.FunctionComponent<ArtistCardProps> = function({
   onClick,
   includedInPlaylist
 }) {
-  const image: Image | null =
+  const image: ArtistImage | null =
     artist.artist.images.length > 0 ? artist.artist.images[0] : null;
   return (
     <LazyImage

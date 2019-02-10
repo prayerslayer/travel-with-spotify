@@ -1,5 +1,14 @@
 import sortBy from "lodash-es/sortBy";
-import { User, Artist, Playlist, Track } from "./spotify";
+import {
+  User,
+  Artist,
+  Playlist,
+  Track,
+  coercePlaylist,
+  coerceTrack,
+  coerceArtist,
+  coerceUser
+} from "./spotify";
 import chunk from "lodash-es/chunk";
 
 type APIOptions = {
@@ -48,7 +57,7 @@ export async function getMe({ token }: APIOptions): Promise<User> {
       Authorization: `Bearer ${token}`
     }
   });
-  return await resp.json();
+  return coerceUser(await resp.json());
 }
 
 export async function findArtist(
@@ -68,7 +77,7 @@ export async function findArtist(
   if (!resp.ok) {
     throw new APIError(resp);
   }
-  const artists = (await resp.json()).artists.items;
+  const artists = (await resp.json()).artists.items.map(a => coerceArtist(a));
   const maybe = sortBy(
     artists.filter(artist => artist.name.toLowerCase() === name.toLowerCase()),
     "-popularity"
@@ -96,26 +105,41 @@ export async function getTopTracks(
   if (!resp.ok) {
     throw new APIError(resp);
   }
-  return (await resp.json()).tracks;
+  return (await resp.json()).tracks.map(t => coerceTrack(t));
 }
+
+async function _addTracksToPlaylist(
+  playlist: Playlist,
+  tracks: Track[],
+  { token }: APIOptions
+): Promise<void> {
+  await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      uris: tracks.map(track => track.uri)
+    })
+  });
+}
+
+const retryingAddTracks = withRetry(_addTracksToPlaylist);
+const MAX_TRACKS_IN_PLAYLIST = 10_000; // https://community.spotify.com/t5/Live-Ideas/Your-Music-Increase-maximum-Songs-allowed-in-Your-Music/idi-p/733759
+const MAX_TRACKS_PER_PLAYLIST_REQUEST = 100;
 
 export async function addTracksToPlaylist(
   playlist: Playlist,
   tracks: Track[],
   { token }: APIOptions
 ): Promise<void> {
-  const trackChunks = chunk(tracks, 100);
+  const trackChunks = chunk(
+    tracks.slice(0, MAX_TRACKS_IN_PLAYLIST),
+    MAX_TRACKS_PER_PLAYLIST_REQUEST
+  );
   for (const trackChunk of trackChunks) {
-    await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        uris: trackChunk.map(track => track.uri)
-      })
-    });
+    await retryingAddTracks(playlist, trackChunk, { token });
   }
 }
 
@@ -149,5 +173,6 @@ export async function getOrCreatePlaylist(
       name
     })
   });
-  return await resp.json();
+  const playlist = await resp.json();
+  return coercePlaylist(playlist);
 }

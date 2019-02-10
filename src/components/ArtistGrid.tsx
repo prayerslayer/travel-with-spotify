@@ -15,7 +15,7 @@ const ArtistGrid: React.FunctionComponent<{
       {artists.map((artist, i) => (
         <ArtistCard
           onClick={() => setShowDetailFor(i !== showDetailFor ? i : -1)}
-          key={artist.artist.uri}
+          key={artist.artist.id}
           includedInPlaylist={i <= indexOfLastIncludedArtist}
           artist={artist}
         />

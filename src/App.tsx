@@ -5,7 +5,7 @@ import Login from "./components/Login";
 import { getOrCreatePlaylist, addTracksToPlaylist } from "./api";
 import chunk from "lodash-es/chunk";
 import { Location, getBandsFromLocation } from "./sparql";
-import { Track, Image, User, ArtistWithTracks } from "./spotify";
+import { Track, ArtistImage, User, ArtistWithTracks } from "./spotify";
 import styled from "styled-components";
 import { Heading, LargeInput, MediumButton, Alert } from "./components/Layout";
 import LazyImage from "./components/LazyImage";
@@ -91,7 +91,7 @@ export default class App extends React.Component<{}, State> {
         newState.fetchedArtistCount += 1;
         const artistExists =
           newState.artists.findIndex(
-            existingArtist => existingArtist.artist.uri === artist.artist.uri
+            existingArtist => existingArtist.artist.id === artist.artist.id
           ) >= 0;
         if (!artistExists && artist.tracks.length > 0) {
           let firstLessPopularArtistIndex = newState.artists.findIndex(
