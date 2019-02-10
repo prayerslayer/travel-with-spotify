@@ -106,8 +106,7 @@ export async function getBandsFromLocation(location: Location) {
     }));
   return uniq<Artist>(bindingToArtists, artist => artist.uri).map(
     (artist: Artist) => ({
-      data: artist,
-      loadedFromSpotify: false,
+      artist,
       tracks: [] as Track[]
     })
   );

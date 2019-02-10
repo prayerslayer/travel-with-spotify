@@ -106,7 +106,6 @@ export default class LocationPicker extends React.Component<Props, State> {
       if (data.length > 0) {
         this.props.onSelect(data[0]);
       }
-      // TODO alert/select if more than one
     }
   }
 
@@ -132,6 +131,7 @@ export default class LocationPicker extends React.Component<Props, State> {
             <Row>
               {this.state.examples.map(location => (
                 <LocationCard
+                  key={location.uri}
                   onClick={() => this.props.onSelect(location)}
                   location={location}
                 />

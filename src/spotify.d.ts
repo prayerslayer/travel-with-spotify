@@ -58,9 +58,8 @@ export type Artist = {
 };
 
 export type ArtistWithTracks = {
-  data: Artist;
+  artist: Artist;
   tracks: Track[];
-  loadedFromSpotify: boolean;
 };
 
 // album: {album_type: "album",…}

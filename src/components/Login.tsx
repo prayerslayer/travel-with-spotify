@@ -6,8 +6,7 @@ import { CenteredInPage, LargeButton } from "./Layout";
 
 type LoginProps = {
   token: string | null;
-  setToken: (token: string) => void;
-  setMe: (me: User) => void;
+  onLogin: (me: User, token: string) => void;
 };
 
 export default class Login extends React.Component<LoginProps> {
@@ -20,8 +19,7 @@ export default class Login extends React.Component<LoginProps> {
 
       spotify.parse(window.location.hash);
       const token = spotify.getAccessToken();
-      this.props.setToken(token);
-      this.props.setMe(await getMe({ token }));
+      this.props.onLogin(await getMe({ token }), token);
     } catch (e) {
       // Do nothing
     }

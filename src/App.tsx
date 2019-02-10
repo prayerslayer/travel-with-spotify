@@ -2,203 +2,28 @@ import * as React from "react";
 import LocationPicker from "./LocationPicker";
 import sortBy from "lodash-es/sortBy";
 import Login from "./components/Login";
-import {
-  findArtist,
-  getOrCreatePlaylist,
-  getTopTracks,
-  addTracksToPlaylist
-} from "./api";
-import { Location, getQueryBandsIn, getBandsFromLocation } from "./sparql";
+import { getOrCreatePlaylist, addTracksToPlaylist } from "./api";
+import chunk from "lodash-es/chunk";
+import { Location, getBandsFromLocation } from "./sparql";
 import { Track, Image, User, ArtistWithTracks } from "./spotify";
 import styled from "styled-components";
 import { Heading, LargeInput, MediumButton } from "./components/Layout";
 import LazyImage from "./components/LazyImage";
-
-const Grid = styled.section`
-  display: grid;
-  grid-template-columns: repeat(4, 180px);
-  grid-gap: 10px 10px;
-  justify-items: center;
-  justify-content: center;
-  align-items: start;
-  align-content: center;
-`;
-
-const GridInlay = styled.section`
-  grid-column: 1 / span 4;
-  background: crimson;
-  color: white;
-  padding: 10px 0px;
-  width: 100%;
-  text-align: center;
-
-  &::before {
-    content: "";
-    display: block;
-    position: relative;
-    top: -20px;
-    width: 0;
-    height: 0;
-    left: ${props => props.left}px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 10px solid crimson;
-  }
-`;
+import ArtistGrid from "./components/ArtistGrid";
+import PlaylistControls from "./components/PlaylistControls";
 
 type State = {
   playlistName: string;
   minPlaylistLengthHours: number;
   tracksPerArtist: number;
-};
+  workers: Worker[];
+  location: Location | null;
 
-const RootContext = React.createContext({
-  token: null,
-  location: null,
-  artists: [],
-  me: null
-});
-
-type RootState = {
-  token: string | null;
-  setToken: (token: string) => void;
-  me: null | User;
-  setMe: (me: User) => void;
+  artistNames: ArtistWithTracks[];
+  fetchedArtistCount: number;
   artists: ArtistWithTracks[];
-  setArtists: (artists: ArtistWithTracks[]) => void;
-  location: null | Location;
-  setLocation: (location: Location) => void;
-};
-
-export default class Root extends React.Component<{}, RootState> {
-  constructor(p) {
-    super(p);
-    this.state = {
-      token: null,
-      setToken: this.setToken,
-      me: null,
-      setMe: this.setMe,
-      artists: [],
-      setArtists: this.setArtists,
-      location: null,
-      setLocation: this.setLocation
-    };
-  }
-
-  setToken = (token: string) => this.setState({ token });
-  setLocation = (location: Location) => this.setState({ location });
-  setArtists = (artists: ArtistWithTracks[]) => this.setState({ artists });
-  setMe = (me: User) => this.setState({ me });
-
-  render() {
-    return (
-      <RootContext.Provider value={this.state}>
-        <App {...this.state} />
-      </RootContext.Provider>
-    );
-  }
-}
-
-const PlaylistControlTable = styled.table`
-  margin: 10px auto;
-  padding: 25px;
-  color: white;
-  background: royalblue;
-`;
-type PlaylistCallback<K extends keyof State> = (s: Pick<State, K>) => void;
-const PlaylistControls: React.FunctionComponent<
-  State & {
-    onChange: PlaylistCallback<any>;
-    onCreate: PlaylistCallback<any>;
-    onClear: () => void;
-  }
-> = function({
-  onChange,
-  onClear,
-  onCreate,
-  playlistName,
-  tracksPerArtist,
-  minPlaylistLengthHours
-}) {
-  return (
-    <PlaylistControlTable>
-      <tbody>
-        <tr>
-          <td>
-            <label htmlFor="playlistname">Playlist Name</label>
-          </td>
-          <td>
-            <LargeInput
-              id="playlistname"
-              type="text"
-              value={playlistName}
-              onChange={e => onChange({ playlistName: e.target.value })}
-            />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label htmlFor="playlisttrackperartist">
-              {tracksPerArtist} Tracks per Artist
-            </label>
-          </td>
-          <td>
-            <LargeInput
-              type="range"
-              min={1}
-              max={10}
-              step={1}
-              onChange={e => onChange({ tracksPerArtist: +e.target.value })}
-            />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label htmlFor="playlistlength">
-              Desired playlist length (hours)
-            </label>
-          </td>
-          <td>
-            <LargeInput
-              id="playlistlength"
-              type="number"
-              min={1}
-              value={minPlaylistLengthHours}
-              onChange={e =>
-                onChange({
-                  minPlaylistLengthHours: Math.max(1, +e.target.value)
-                })
-              }
-            />
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <MediumButton
-              onClick={() => {
-                onClear();
-              }}
-            >
-              Clear selection
-            </MediumButton>
-          </td>
-          <td>
-            <MediumButton
-              onClick={() =>
-                onCreate({
-                  playlistName,
-                  tracksPerArtist,
-                  minPlaylistLengthHours
-                })
-              }
-            >
-              Create playlist
-            </MediumButton>
-          </td>
-        </tr>
-      </tbody>
-    </PlaylistControlTable>
-  );
+  token: string | null;
+  me: User | null;
 };
 
 const Progress = function({ percent, hideWhenFinished = true }) {
@@ -229,72 +54,102 @@ const Progress = function({ percent, hideWhenFinished = true }) {
   );
 };
 
-class App extends React.Component<RootState, State> {
-  state = {
-    playlistName: "",
-    minPlaylistLengthHours: 5,
-    tracksPerArtist: 10
-  };
+const INITIAL_STATE: State = {
+  playlistName: "",
+  minPlaylistLengthHours: 5,
+  tracksPerArtist: 10,
+  artistNames: [],
+  fetchedArtistCount: 0,
+  artists: [],
+  token: null,
+  location: null,
+  me: null,
+  workers: []
+};
 
-  async loadArtistFromSpotify(band: ArtistWithTracks) {
-    const idx = this.props.artists.findIndex(
-      listArtist => listArtist.data.uri === band.data.uri
-    );
-    const newArtists = [...this.props.artists];
-    newArtists.splice(idx, 1);
-
-    const artist = await findArtist(band.data.name, {
-      token: this.props.token
-    });
-    if (artist === null) {
-      this.props.setArtists(newArtists);
-      return;
-    }
-
-    const tracks = await getTopTracks(artist, { token: this.props.token });
-    if (tracks.length > 0) {
-      newArtists.splice(idx, 0, {
-        data: artist,
-        tracks,
-        loadedFromSpotify: true
-      });
-    }
-
-    this.props.setArtists(newArtists);
+const hasIdleCallback =
+  "requestIdleCallback" in window
+    ? window.requestIdleCallback
+    : window.setTimeout;
+const deferFn = function(cb) {
+  if (hasIdleCallback) {
+    window.requestIdleCallback(cb);
+  } else {
+    window.setTimeout(cb, 0);
   }
+};
+
+export default class App extends React.Component<{}, State> {
+  state = INITIAL_STATE;
+
+  insertArtist = (artist: ArtistWithTracks) => {
+    deferFn(() => {
+      this.setState(state => {
+        const newState = { ...state };
+        newState.fetchedArtistCount += 1;
+        const artistExists =
+          newState.artists.findIndex(
+            existingArtist => existingArtist.artist.uri === artist.artist.uri
+          ) >= 0;
+        if (!artistExists) {
+          let firstLessPopularArtistIndex = newState.artists.findIndex(
+            listArtist =>
+              artist.artist.popularity > listArtist.artist.popularity
+          );
+          if (firstLessPopularArtistIndex === -1) {
+            firstLessPopularArtistIndex = newState.artists.length;
+          }
+          newState.artists.splice(firstLessPopularArtistIndex, 0, artist);
+        }
+        return newState;
+      });
+    });
+  };
 
   createPlaylist = async (
     name: string,
     artists: ArtistWithTracks[],
     tracksPerArtist: number
   ) => {
-    const playlist = await getOrCreatePlaylist(this.props.me, name, {
-      token: this.props.token
+    const playlist = await getOrCreatePlaylist(this.state.me, name, {
+      token: this.state.token
     });
     const tracks: Track[] = [];
     for (const artist of artists) {
       tracks.push(...artist.tracks.slice(0, tracksPerArtist));
     }
     await addTracksToPlaylist(playlist, tracks, {
-      token: this.props.token
+      token: this.state.token
     });
   };
 
-  async startLoadingArtistsFromSpotify() {
-    for (const artist of this.props.artists) {
-      await this.loadArtistFromSpotify(artist);
+  startLoadingArtistsFromSpotify = async () => {
+    const chunks = chunk(this.state.artistNames, 500);
+    console.log("Starting", chunks.length, "workers");
+    for (const artistChunk of chunks) {
+      const worker = new Worker("./worker.ts");
+      this.setState(state => ({ workers: [...state.workers, worker] }));
+      worker.onmessage = e => {
+        this.insertArtist(e.data as ArtistWithTracks);
+      };
+      worker.postMessage({
+        artistNames: artistChunk,
+        token: this.state.token
+      });
     }
-  }
+  };
 
-  async handleLocation(location: Location) {
-    const artists = await getBandsFromLocation(location);
-    this.props.setLocation(location);
-    this.setState({
-      playlistName: location.name
-    });
-    this.props.setArtists(artists);
-    this.startLoadingArtistsFromSpotify();
-  }
+  handleLocation = async (location: Location) => {
+    const artistNames = await getBandsFromLocation(location);
+    this.setState(
+      {
+        location,
+        artistNames,
+        playlistName: location.name
+      },
+      () => this.startLoadingArtistsFromSpotify()
+    );
+  };
 
   partitionArtists: (artistsByPopularity: ArtistWithTracks[]) => number = (
     artistsByPopularity: ArtistWithTracks[]
@@ -316,59 +171,61 @@ class App extends React.Component<RootState, State> {
   };
 
   render() {
-    const { artists, location, token } = this.props;
-    const loadedArtists = artists.filter(artist => artist.loadedFromSpotify);
-    const artistsByPopularity = sortBy<ArtistWithTracks>(
-      loadedArtists,
-      artist => -artist.data.popularity
-    ).slice(0, 400);
-    const indexOfLastIncludedArtist = this.partitionArtists(
-      artistsByPopularity
-    );
+    const {
+      artists,
+      artistNames,
+      fetchedArtistCount: processedArtists,
+      location,
+      token
+    } = this.state;
+    const indexOfLastIncludedArtist = this.partitionArtists(artists);
 
     if (token === null) {
       return (
         <Login
-          token={this.props.token}
-          setMe={this.props.setMe}
-          setToken={this.props.setToken}
+          token={this.state.token}
+          onLogin={(me, token) => {
+            this.setState({ me, token });
+          }}
         />
       );
     }
     return (
       <div>
-        {location === null && (
+        {location === null ? (
           <LocationPicker
             selectedLocation={location}
-            onSelect={this.handleLocation.bind(this)}
+            onSelect={this.handleLocation}
           />
-        )}
-        {this.props.location !== null && (
-          <PlaylistControls
-            {...this.state}
-            onChange={s => {
-              this.setState(s);
-            }}
-            onClear={() => {
-              this.props.setLocation(null);
-              this.props.setArtists([]);
-              // TODO cancel ongoing work
-            }}
-            onCreate={({ playlistName, tracksPerArtist }) => {
-              this.createPlaylist(
-                playlistName,
-                artistsByPopularity.slice(0, indexOfLastIncludedArtist + 1),
-                tracksPerArtist
-              );
-            }}
-          />
-        )}
-        {/* artists */}
-        {this.props.location !== null && (
+        ) : (
           <React.Fragment>
-            <Progress percent={loadedArtists.length / artists.length} />
+            <PlaylistControls
+              {...this.state}
+              onChange={s => {
+                this.setState(s);
+              }}
+              onClear={() => {
+                for (const worker of this.state.workers) {
+                  worker.terminate();
+                }
+                this.setState({
+                  ...INITIAL_STATE,
+                  me: this.state.me,
+                  token: this.state.token
+                });
+              }}
+              onCreate={() => {
+                this.createPlaylist(
+                  this.state.playlistName,
+                  artists.slice(0, indexOfLastIncludedArtist + 1),
+                  this.state.tracksPerArtist
+                );
+              }}
+            />
+
+            <Progress percent={processedArtists / artistNames.length} />
             <ArtistGrid
-              artists={artistsByPopularity}
+              artists={artists}
               indexOfLastIncludedArtist={indexOfLastIncludedArtist}
             />
           </React.Fragment>
@@ -377,139 +234,3 @@ class App extends React.Component<RootState, State> {
     );
   }
 }
-
-const DisplayFont = styled.div`
-  font-size: 3rem;
-  font-weight: lighter;
-`;
-
-const Badge = styled.span`
-  border-radius: 15px;
-  font-size: 0.75rem;
-  padding: 5px 10px;
-  margin: 2.5px;
-  background: darkred;
-  color: white;
-  white-space: nowrap;
-`;
-
-const BadgeContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-`;
-
-const ArtistDetail: React.SFC<{
-  artist: ArtistWithTracks;
-  index: number;
-}> = function({ artist, index }) {
-  const followerCount = new Intl.NumberFormat().format(
-    artist.data.followers.total
-  );
-  const indexInRow = index % 4;
-  return (
-    <GridInlay left={indexInRow * (180 + 10) + (180 / 2 - 15)}>
-      <DisplayFont>{artist.data.name}</DisplayFont>
-      <Heading>{followerCount} followers</Heading>
-      <BadgeContainer>
-        {artist.data.genres.map((genre, i) => (
-          <Badge key={genre}>{genre}</Badge>
-        ))}
-      </BadgeContainer>
-    </GridInlay>
-  );
-};
-
-const ArtistGrid: React.SFC<{
-  artists: ArtistWithTracks[];
-  indexOfLastIncludedArtist: number;
-}> = function({ artists, indexOfLastIncludedArtist }) {
-  const [showDetailFor, setShowDetailFor] = React.useState(-1);
-  let artistsBefore = artists;
-  let artistsAfter = [];
-  const showingDetail = showDetailFor >= 0;
-  if (showingDetail) {
-    let pivot = (Math.floor(showDetailFor / 4) + 1) * 4;
-    artistsBefore = artists.slice(0, pivot);
-    artistsAfter = artists.slice(pivot);
-  }
-  return (
-    <Grid>
-      {artistsBefore.map((artist, i) => (
-        <ArtistCard
-          onClick={() => setShowDetailFor(i !== showDetailFor ? i : -1)}
-          key={artist.data.uri}
-          selected={showDetailFor === i}
-          includedInPlaylist={i <= indexOfLastIncludedArtist}
-          artist={artist}
-        />
-      ))}
-      {showingDetail && (
-        <ArtistDetail index={showDetailFor} artist={artists[showDetailFor]} />
-      )}
-      {artistsAfter.map((artist, i) => (
-        <ArtistCard
-          onClick={() =>
-            setShowDetailFor(
-              artistsBefore.length + i !== showDetailFor
-                ? artistsBefore.length + i
-                : -1
-            )
-          }
-          selected={showDetailFor === artistsBefore.length + i}
-          key={artist.data.uri}
-          includedInPlaylist={
-            artistsBefore.length + i <= indexOfLastIncludedArtist
-          }
-          artist={artist}
-        />
-      ))}
-    </Grid>
-  );
-};
-
-type ArtistCardProps = {
-  artist: ArtistWithTracks;
-  includedInPlaylist: boolean;
-  selected: boolean;
-  onClick: () => void;
-};
-const ArtistCard: React.SFC<ArtistCardProps> = function({
-  artist,
-  onClick,
-  selected,
-  includedInPlaylist
-}) {
-  const image: Image | null =
-    artist.data.images.length > 0 ? artist.data.images[0] : null;
-  return (
-    <div onClick={() => onClick()} title={artist.data.name}>
-      <LazyImage
-        width={180}
-        height={180}
-        style={{
-          objectFit: "cover",
-          filter: !includedInPlaylist ? "opacity(33%)" : undefined
-        }}
-        src={image && image.url}
-        placeholder={
-          <div
-            style={{
-              background: "crimson",
-              alignItems: "center",
-              justifyContent: "center",
-              display: "flex",
-              color: "fff",
-              width: 180,
-              height: 180,
-              filter: !includedInPlaylist ? "opacity(33%)" : undefined
-            }}
-          >
-            {artist.data.name}
-          </div>
-        }
-        alt=""
-      />
-    </div>
-  );
-};

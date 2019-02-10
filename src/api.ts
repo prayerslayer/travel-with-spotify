@@ -6,6 +6,37 @@ type APIOptions = {
   token: string;
 };
 
+export class APIError extends Error {
+  response: Response = null;
+
+  constructor(response: Response) {
+    super(response.statusText);
+    this.response = response;
+  }
+}
+
+function sleep(seconds: number): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(() => resolve(), seconds);
+  });
+}
+
+export function withRetry(fn) {
+  return async function wrappedFn(...args) {
+    try {
+      return await fn(...args);
+    } catch (e) {
+      if (e instanceof APIError) {
+        if (e.response.status === 429) {
+          const waitSeconds = +e.response.headers.get("Retry-After");
+          await sleep(waitSeconds);
+          return await wrappedFn(...args);
+        }
+      }
+    }
+  };
+}
+
 export async function loggedIn(opts: APIOptions): Promise<boolean> {
   const me = await getMe(opts);
   return !(me as any).error;
@@ -19,8 +50,6 @@ export async function getMe({ token }: APIOptions): Promise<User> {
   });
   return await resp.json();
 }
-
-async function getArtist(id: string, { token }: APIOptions) {}
 
 export async function findArtist(
   name: string,
@@ -36,6 +65,9 @@ export async function findArtist(
       }
     }
   );
+  if (!resp.ok) {
+    throw new APIError(resp);
+  }
   const artists = (await resp.json()).artists.items;
   const maybe = sortBy(
     artists.filter(artist => artist.name === name),
@@ -61,6 +93,9 @@ export async function getTopTracks(
       }
     }
   );
+  if (!resp.ok) {
+    throw new APIError(resp);
+  }
   return (await resp.json()).tracks;
 }
 
