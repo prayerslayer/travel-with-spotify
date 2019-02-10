@@ -200,7 +200,9 @@ export default class App extends React.Component<{}, State> {
         ) : (
           <React.Fragment>
             <PlaylistControls
-              {...this.state}
+              minPlaylistLengthHours={this.state.minPlaylistLengthHours}
+              playlistName={this.state.playlistName}
+              tracksPerArtist={this.state.tracksPerArtist}
               onChange={s => {
                 this.setState(s);
               }}
@@ -210,6 +212,7 @@ export default class App extends React.Component<{}, State> {
                 }
                 this.setState({
                   ...INITIAL_STATE,
+                  artists: [], // why?
                   me: this.state.me,
                   token: this.state.token
                 });

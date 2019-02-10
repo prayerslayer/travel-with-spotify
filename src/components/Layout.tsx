@@ -26,7 +26,7 @@ export const Button = styled.button`
   border: 2px solid black;
   cursor: pointer;
   color: black;
-  padding: 0.25em 1em;
+  padding: 0.25em 1em 0.35em 1em;
 
   :hover {
     color: whitesmoke;
