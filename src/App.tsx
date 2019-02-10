@@ -66,11 +66,10 @@ const INITIAL_STATE: State = {
   playlistCreated: false
 };
 
-const hasIdleCallback =
-  "requestIdleCallback" in window
-    ? window.requestIdleCallback
-    : window.setTimeout;
+const hasIdleCallback = "requestIdleCallback" in window;
+
 const deferFn = function(cb) {
+  debugger;
   if (hasIdleCallback) {
     window.requestIdleCallback(cb);
   } else {
