@@ -91,7 +91,7 @@ export default class App extends React.Component<{}, State> {
           newState.artists.findIndex(
             existingArtist => existingArtist.artist.uri === artist.artist.uri
           ) >= 0;
-        if (!artistExists) {
+        if (!artistExists && artist.tracks.length > 0) {
           let firstLessPopularArtistIndex = newState.artists.findIndex(
             listArtist =>
               artist.artist.popularity > listArtist.artist.popularity

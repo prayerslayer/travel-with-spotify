@@ -70,7 +70,7 @@ export async function findArtist(
   }
   const artists = (await resp.json()).artists.items;
   const maybe = sortBy(
-    artists.filter(artist => artist.name === name),
+    artists.filter(artist => artist.name.toLowerCase() === name.toLowerCase()),
     "-popularity"
   );
   if (maybe.length > 0) {
